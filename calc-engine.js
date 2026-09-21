@@ -191,11 +191,22 @@ function projectBalances(inputs) {
     const employerMatch = salary * matchedPct / 100 * (inputs.employerMatchRate / 100);
     const taxableContrib = salary * inputs.taxableContribPct / 100;
 
-    // ESOP: the company's contribution rate (as % of pay) decays over time as the
-    // employee pool sharing a roughly fixed contribution/share pool grows -- see
-    // methodology. Grants a company's own contribution rate today; year i=0 is
-    // undiluted, decaying by esopDilutionRate% per year after that.
-    const esopContribPct = (inputs.esopContribPct || 0) * Math.pow(1 - (inputs.esopDilutionRate || 0) / 100, i);
+    // ESOP: many ESOPs (this one included) are leveraged -- the trust borrowed money
+    // to buy shares up front, and each loan payment releases more shares from a
+    // suspense account to be allocated to participants. That means the contribution
+    // rate isn't a smooth decay to zero; it runs at roughly its current pace until
+    // the loan is paid off, then drops to whatever smaller non-leveraged rate (if
+    // any) continues afterward. esopLoanPayoffYear (year, e.g. 2042) is the calendar
+    // year the leveraged rate stops and esopPostPayoffContribPct takes over; if
+    // esopLoanPayoffYear is unset, the leveraged rate is simply assumed to continue
+    // indefinitely (previous behavior). Whichever rate applies still decays by
+    // esopDilutionRate%/yr, since headcount growth dilutes both leveraged and
+    // non-leveraged pools alike -- see methodology.
+    const currentYear = CONFIG.CURRENT_YEAR + i;
+    const esopBaseContribPct = (inputs.esopLoanPayoffYear && currentYear >= inputs.esopLoanPayoffYear)
+      ? (inputs.esopPostPayoffContribPct || 0)
+      : (inputs.esopContribPct || 0);
+    const esopContribPct = esopBaseContribPct * Math.pow(1 - (inputs.esopDilutionRate || 0) / 100, i);
     const esopContrib = salary * esopContribPct / 100;
 
     bal.traditional = (bal.traditional + employeeTraditional + employerMatch) * (1 + r);

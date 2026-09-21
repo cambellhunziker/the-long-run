@@ -88,3 +88,26 @@ console.log('ESOP balance at retirement (35 yrs, 6% decaying 3%/yr, 7% growth):'
 const esopNoDilution = Object.assign({}, esopOnly, {esopDilutionRate:0});
 const projEsopNoDilution = E.projectBalances(esopNoDilution);
 console.log('Same but 0% dilution (should be higher):', fmt(projEsopNoDilution.finalBalances.esop));
+
+console.log('\n=== ESOP leveraged loan payoff sanity ===');
+// currentAge 30 in CONFIG.CURRENT_YEAR (2026) -> retires at 65 in 2061. Loan payoff at 2042
+// falls at age 46 (i=16), well before retirement, so leveraged (6%) contributions should
+// stop there and post-payoff (1%) should take over for the remaining working years.
+const esopLeveraged = Object.assign({}, esopOnly, {esopLoanPayoffYear: 2042, esopPostPayoffContribPct: 1, esopDilutionRate: 0});
+const projLeveraged = E.projectBalances(esopLeveraged);
+const rowAtPayoff = projLeveraged.rows.find(r => r.year === 2042);
+const rowJustBefore = projLeveraged.rows.find(r => r.year === 2041);
+const rowJustAfter = projLeveraged.rows.find(r => r.year === 2043);
+console.log('ESOP value, year before payoff (2041):', fmt(rowJustBefore.esop));
+console.log('ESOP value, payoff year (2042, last leveraged contribution should have landed the prior year):', fmt(rowAtPayoff.esop));
+console.log('ESOP value, year after payoff (2043):', fmt(rowJustAfter.esop));
+console.log('Contribution jump ratio 2041->2042 vs 2042->2043 (post-payoff growth should be much slower):',
+  ((rowAtPayoff.esop - rowJustBefore.esop) / (rowJustAfter.esop - rowAtPayoff.esop)).toFixed(2) + 'x');
+// Sanity: no payoff year set at all should reproduce the original always-leveraged behavior exactly
+const esopNoPayoffYear = Object.assign({}, esopOnly, {esopDilutionRate: 0});
+delete esopNoPayoffYear.esopLoanPayoffYear;
+const projNoPayoffYear = E.projectBalances(esopNoPayoffYear);
+const alwaysLeveraged = Object.assign({}, esopOnly, {esopDilutionRate: 0, esopLoanPayoffYear: 9999, esopPostPayoffContribPct: 0});
+const projAlwaysLeveraged = E.projectBalances(alwaysLeveraged);
+console.log('Backward-compat check (no payoff year vs. payoff year far in future) match:',
+  Math.abs(projNoPayoffYear.finalBalances.esop - projAlwaysLeveraged.finalBalances.esop) < 0.01 ? 'OK' : 'MISMATCH');

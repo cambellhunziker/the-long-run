@@ -395,6 +395,19 @@
               <div class="unit">%/yr &mdash; your company's stock, not the S&amp;P 500</div>
             </div>
           </div>
+          <p class="grp-note">Many ESOPs are leveraged: the trust borrowed money to buy shares, and each loan payment releases more shares to allocate to participants. If yours works this way, set when that stops below &mdash; leave the payoff year blank if you don't expect it to.</p>
+          <div class="two-col">
+            <div class="field">
+              <label for="esopLoanPayoffYear">Loan payoff year</label>
+              <input type="number" id="esopLoanPayoffYear" min="2026" max="2100" step="1" placeholder="e.g. 2042">
+              <div class="unit">calendar year &mdash; leave blank if not leveraged or unknown</div>
+            </div>
+            <div class="field">
+              <label for="esopPostPayoffContribPct">Contribution after payoff</label>
+              <input type="number" id="esopPostPayoffContribPct" min="0" max="100" step="0.5" value="0">
+              <div class="unit">% of salary/yr &mdash; any non-leveraged contribution that continues</div>
+            </div>
+          </div>
         </fieldset>
 
         <fieldset>
@@ -601,7 +614,8 @@
         <details>
           <summary>How the ESOP is modeled</summary>
           <div class="details-body">
-            <p>An Employee Stock Ownership Plan is an employer-funded retirement plan, not a payroll deferral &mdash; the company contributes shares or cash to buy shares on your behalf, typically allocated across participants roughly in proportion to compensation, and taxed as ordinary income when distributed (like a 401(k)), which is why this tool treats ESOP withdrawals the same way it treats Traditional withdrawals. Two things distinguish it from a 401(k) balance here: it grows at your own assumed rate for your company's stock, not the broad-market return you set elsewhere (company-specific results can run well above or below the S&amp;P 500); and its contribution rate <em>decays</em> over time by the &ldquo;allocation decay&rdquo; percentage you set. That decay is a modeling simplification for a real, well-documented dynamic &mdash; as companies mature, employee headcount tends to grow faster than the share pool set aside for the ESOP, so each individual's allocation as a share of pay tends to shrink over the years even as the plan overall keeps growing; newer/smaller/fast-growing companies often see this more sharply than mature ones. There's no single public formula for that decay rate, so the default (3%/year) is a reasonable illustrative starting point, not a sourced constant &mdash; adjust it if you know your company's actual allocation trend. This tool does not model vesting schedules or cliffs (grants are treated as immediately vested), single-company concentration risk (an ESOP is far less diversified than a broad index, and a real plan should treat that risk separately from this tool's constant-return assumption), or the specific rules around ESOP distributions at separation vs. retirement.</p>
+            <p>An Employee Stock Ownership Plan is an employer-funded retirement plan, not a payroll deferral &mdash; the company contributes shares or cash to buy shares on your behalf, typically allocated across participants roughly in proportion to compensation, and taxed as ordinary income when distributed (like a 401(k)), which is why this tool treats ESOP withdrawals the same way it treats Traditional withdrawals. It grows at your own assumed rate for your company's stock, not the broad-market return you set elsewhere (company-specific results can run well above or below the S&amp;P 500).</p>
+            <p>Many ESOPs, including leveraged ones, work differently from a simple annual grant: the trust borrows money to buy a large block of shares up front from selling owners, and those shares sit in a suspense account until the loan is paid off &mdash; each loan payment releases a proportional slice to allocate to participants. That makes the contribution rate you're actually experiencing roughly steady while the loan is being serviced, then it drops (often to just a smaller non-leveraged contribution, or to zero) once the loan retires &mdash; not a smooth decay to nothing. If that describes your plan, set &ldquo;Loan payoff year&rdquo; to when the loan retires and &ldquo;Contribution after payoff&rdquo; to whatever smaller rate (if any) continues afterward; leave the payoff year blank to model the contribution rate as continuing indefinitely (the simpler assumption, appropriate if your company keeps re-leveraging to buy out retiring owners on an ongoing basis, or if your ESOP isn't leveraged at all). Whichever rate applies still decays by the &ldquo;allocation decay&rdquo; percentage you set, since headcount growth dilutes both the leveraged and non-leveraged pools alike &mdash; as companies mature, employee headcount tends to grow faster than the share pool, so each individual's allocation as a share of pay tends to shrink over the years even as the plan overall keeps growing. There's no single public formula for that decay rate, so the default (3%/year) is a reasonable illustrative starting point, not a sourced constant &mdash; adjust it if you know your company's actual allocation trend. This tool does not model vesting schedules or cliffs (grants are treated as immediately vested), single-company concentration risk (an ESOP is far less diversified than a broad index, and a real plan should treat that risk separately from this tool's constant-return assumption), the specific rules around ESOP distributions at separation vs. retirement, or the mechanics of multiple overlapping loan tranches with different payoff dates (if your plan has several, use the payoff year of the last one to retire, since that's when your contribution rate actually steps down).</p>
           </div>
         </details>
         <details>
@@ -833,10 +847,19 @@
       var employerMatch = salary*matchedPct/100*(inputs.employerMatchRate/100);
       var taxableContrib = salary*inputs.taxableContribPct/100;
 
-      // ESOP: the company's contribution rate (as % of pay) decays over time as the
-      // employee pool sharing a roughly fixed contribution/share pool grows -- see
-      // methodology. Year i=0 uses the undiluted rate; it decays esopDilutionRate%/yr after.
-      var esopContribPct = (inputs.esopContribPct||0) * Math.pow(1 - (inputs.esopDilutionRate||0)/100, i);
+      // ESOP: many ESOPs (this one included) are leveraged -- the trust borrowed money
+      // to buy shares up front, and each loan payment releases more shares from a
+      // suspense account to be allocated to participants. The contribution rate runs
+      // at roughly its current pace until the loan is paid off (esopLoanPayoffYear),
+      // then drops to whatever smaller non-leveraged rate (if any) continues after
+      // (esopPostPayoffContribPct). If esopLoanPayoffYear is unset, the leveraged
+      // rate is simply assumed to continue indefinitely. Whichever rate applies still
+      // decays by esopDilutionRate%/yr -- see methodology.
+      var currentYear = CONFIG.CURRENT_YEAR + i;
+      var esopBaseContribPct = (inputs.esopLoanPayoffYear && currentYear >= inputs.esopLoanPayoffYear)
+        ? (inputs.esopPostPayoffContribPct||0)
+        : (inputs.esopContribPct||0);
+      var esopContribPct = esopBaseContribPct * Math.pow(1 - (inputs.esopDilutionRate||0)/100, i);
       var esopContrib = salary*esopContribPct/100;
 
       bal.traditional = (bal.traditional+employeeTraditional+employerMatch)*(1+r);
@@ -1109,6 +1132,8 @@
       esopContribPct: num('esopContribPct'),
       esopDilutionRate: num('esopDilutionRate'),
       esopGrowthRate: num('esopGrowthRate'),
+      esopLoanPayoffYear: num('esopLoanPayoffYear'),
+      esopPostPayoffContribPct: num('esopPostPayoffContribPct'),
       expectedReturn: num('expectedReturn'),
       inflationRate: num('inflationRate'),
       ssClaimAge: ssClaimAgeTouched ? num('ssClaimAge') : null,
@@ -1123,9 +1148,11 @@
     if (!(inputs.workStartAge <= inputs.currentAge)) errors.push('Career-start age must be at or before current age.');
     if (!(inputs.deathAge >= inputs.retirementAge)) errors.push('Planning age must be at or after retirement age.');
     if (inputs.ssClaimAge !== null && !(inputs.ssClaimAge >= 62 && inputs.ssClaimAge <= 70)) errors.push('Social Security claiming age must be between 62 and 70.');
+    if (!isNaN(inputs.esopLoanPayoffYear) && !(inputs.esopLoanPayoffYear >= 2026 && inputs.esopLoanPayoffYear <= 2100)) errors.push('ESOP loan payoff year must be between 2026 and 2100.');
     Object.keys(inputs).forEach(function(k){
       if (k === 'filingStatus' || k === 'sex') return;
       if (k === 'ssClaimAge' && inputs[k] === null) return;
+      if (k === 'esopLoanPayoffYear' && isNaN(inputs[k])) return; // optional -- blank means "not leveraged / unknown"
       if (isNaN(inputs[k])) errors.push('All fields must be filled in.');
     });
     if (errors.length){
@@ -1431,6 +1458,9 @@
     kv('Taxable: balance / contribution', fmtUSD(inputs.taxableBalance)+' / '+inputs.taxableContribPct+'%');
     kv('ESOP: value / contribution', fmtUSD(inputs.esopBalance)+' / '+inputs.esopContribPct+'%/yr');
     kv('ESOP: allocation decay / growth', inputs.esopDilutionRate+'%/yr / '+inputs.esopGrowthRate+'%/yr');
+    if (!isNaN(inputs.esopLoanPayoffYear)){
+      kv('ESOP: loan payoff year / contribution after', String(inputs.esopLoanPayoffYear)+' / '+(inputs.esopPostPayoffContribPct||0)+'%/yr');
+    }
     kv('Social Security claiming age', String(results.ssClaimAge) + (ssClaimAgeTouched ? ' (your choice)' : ' (recommended)'));
     kv('Trust annual spend rate', inputs.trustSpendRate+'%/yr');
     y += 8; rule();
