@@ -1,0 +1,1636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Long Run</title>
+<meta name="description" content="The Long Run &mdash; a retirement projection calculator: nominal and today's-dollar views, Social Security claim-age optimization, and a downloadable PDF report.">
+<style>
+  :root{
+    --ink:#14213D; --ink-soft:#3D4A63; --ink-faint:#6B7690;
+    --paper:#F5F6F2; --surface:#FFFFFF; --surface-2:#ECEEE8;
+    --border:#D9DBD2; --border-strong:#C3C6BA;
+    --brass:#C08A2E; --brass-ink:#7A5518; --brass-wash:#F3E6CC;
+    --forest:#1F8A5F; --forest-wash:#DFF0E6;
+    --steel:#2E6FBE; --steel-wash:#E1EAF7;
+    --rust:#B3402A; --rust-wash:#F6E1DB;
+    --chart-trad:#C08A2E; --chart-roth:#1F8A5F; --chart-taxable:#2E6FBE; --chart-stock:#8B4B7A;
+    --shadow: 0 1px 2px rgba(20,33,61,.06), 0 8px 24px -12px rgba(20,33,61,.18);
+    --focus: #7A5518;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ink:#EDEAE0; --ink-soft:#B7B2A4; --ink-faint:#8B8778;
+      --paper:#12161B; --surface:#1B2129; --surface-2:#222932;
+      --border:#313A44; --border-strong:#3D4854;
+      --brass:#D9A64B; --brass-ink:#E9C275; --brass-wash:#2C2415;
+      --forest:#3FB080; --forest-wash:#132821;
+      --steel:#6C9EE0; --steel-wash:#141F2E;
+      --rust:#E07E63; --rust-wash:#2A1815;
+      --chart-trad:#B87F1F; --chart-roth:#2F9A6D; --chart-taxable:#4C8AD1; --chart-stock:#B06B9A;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
+      --focus: #E9C275;
+    }
+  }
+  :root[data-theme="dark"]{
+    --ink:#EDEAE0; --ink-soft:#B7B2A4; --ink-faint:#8B8778;
+    --paper:#12161B; --surface:#1B2129; --surface-2:#222932;
+    --border:#313A44; --border-strong:#3D4854;
+    --brass:#D9A64B; --brass-ink:#E9C275; --brass-wash:#2C2415;
+    --forest:#3FB080; --forest-wash:#132821;
+    --steel:#6C9EE0; --steel-wash:#141F2E;
+    --rust:#E07E63; --rust-wash:#2A1815;
+    --chart-trad:#B87F1F; --chart-roth:#2F9A6D; --chart-taxable:#4C8AD1; --chart-stock:#B06B9A;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
+    --focus: #E9C275;
+  }
+
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    padding-inline:18px; padding-block:28px 60px;
+  }
+  h1,h2,h3{ font-family:'Fraunces', Georgia, serif; font-weight:600; text-wrap:balance; margin:0; }
+  .num, input, .mono, td.num-cell, .big-number, .table-num{
+    font-family:'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+  a{ color:var(--brass-ink); }
+  ::selection{ background:var(--brass-wash); }
+  :focus-visible{ outline:2px solid var(--focus); outline-offset:2px; border-radius:4px; }
+
+  .wrap{ max-width:1180px; margin-inline:auto; }
+
+  /* ---------- Header ---------- */
+  header.top{ max-width:760px; margin-bottom:28px; }
+  .eyebrow{
+    font-size:.72rem; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--brass-ink); font-weight:600; margin-bottom:10px;
+  }
+  h1.title{ font-size:clamp(2rem, 5vw, 2.9rem); line-height:1.05; margin-bottom:12px; }
+  .subhead{ color:var(--ink-soft); font-size:1.02rem; line-height:1.55; max-width:62ch; }
+  .disclaimer-strip{
+    margin-top:18px; display:flex; gap:10px; align-items:flex-start;
+    background:var(--surface-2); border:1px solid var(--border); border-radius:10px;
+    padding:12px 14px; font-size:.86rem; color:var(--ink-soft); line-height:1.5;
+  }
+  .disclaimer-strip strong{ color:var(--ink); }
+
+  /* ---------- Hero big numbers ---------- */
+  .hero{
+    display:grid; grid-template-columns:repeat(3, 1fr); gap:14px; margin-bottom:34px;
+  }
+  @media (max-width:700px){ .hero{ grid-template-columns:1fr; } }
+  @media (max-width:480px){ .two-col{ grid-template-columns:1fr; } }
+  .hero-tile{
+    background:var(--surface); border:1px solid var(--border); border-radius:14px;
+    padding:20px 20px 18px; box-shadow:var(--shadow); position:relative; overflow:hidden;
+  }
+  .hero-tile .tag{
+    font-size:.68rem; letter-spacing:.1em; text-transform:uppercase; font-weight:600;
+    color:var(--ink-faint); margin-bottom:8px; display:block;
+  }
+  .hero-tile .big-number{
+    font-size:clamp(1.55rem, 3.4vw, 2.05rem); font-weight:600; color:var(--ink); line-height:1.1;
+    display:block; margin-bottom:6px;
+  }
+  .hero-tile .cap{ font-size:.82rem; color:var(--ink-soft); line-height:1.45; }
+  .hero-tile.trad::before, .hero-tile.real::before, .hero-tile.mnd::before{
+    content:""; position:absolute; top:0; left:0; right:0; height:3px;
+  }
+  .hero-tile.nominal::before{ background:var(--steel); }
+  .hero-tile.real::before{ background:var(--forest); }
+  .hero-tile.mnd::before{ background:var(--brass); }
+  .hero-note{ grid-column:1/-1; font-size:.8rem; color:var(--ink-faint); margin-top:-2px; }
+
+  /* ---------- Layout ---------- */
+  .layout{ display:grid; grid-template-columns:360px 1fr; gap:22px; align-items:start; }
+  .layout > *{ min-width:0; }
+  @media (max-width:880px){ .layout{ grid-template-columns:1fr; } }
+
+  .panel{
+    background:var(--surface); border:1px solid var(--border); border-radius:14px;
+    padding:20px; box-shadow:var(--shadow);
+  }
+  aside.inputs{ position:static; }
+
+  fieldset{ border:none; padding:0; margin:0 0 22px; }
+  fieldset:last-of-type{ margin-bottom:0; }
+  legend{
+    font-family:'Fraunces', serif; font-weight:600; font-size:1.02rem;
+    padding:0; margin-bottom:12px; color:var(--ink);
+  }
+  .field{ margin-bottom:12px; }
+  .field label{
+    display:block; font-size:.8rem; color:var(--ink-soft); margin-bottom:4px;
+  }
+  .field .input-row{ display:flex; align-items:center; gap:0; }
+  .field input, .field select{
+    width:100%; padding:8px 10px; border:1px solid var(--border-strong);
+    border-radius:8px; background:var(--surface-2); color:var(--ink); font-size:.92rem;
+  }
+  .field select{ font-family:'Public Sans', sans-serif; }
+  .field .unit{
+    font-size:.78rem; color:var(--ink-faint); margin-top:3px;
+  }
+  .two-col{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .grp-note{ font-size:.78rem; color:var(--ink-faint); margin:-6px 0 12px; line-height:1.4; }
+
+  /* ---------- Buttons ---------- */
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    background:var(--brass); color:#1C1204; border:none; border-radius:9px;
+    font-family:'Public Sans', sans-serif; font-weight:600; font-size:.92rem;
+    padding:11px 18px; cursor:pointer; width:100%;
+  }
+  .btn:hover{ filter:brightness(1.06); }
+  .btn:active{ filter:brightness(.96); }
+  .btn-status{ font-size:.78rem; color:var(--ink-soft); margin-top:8px; min-height:1.2em; }
+  .btn-secondary{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    background:transparent; color:var(--forest); border:1px solid var(--forest); border-radius:9px;
+    font-family:'Public Sans', sans-serif; font-weight:600; font-size:.82rem;
+    padding:8px 14px; cursor:pointer; width:100%; margin-top:-4px; margin-bottom:14px;
+  }
+  .btn-secondary:hover{ background:var(--forest-wash); }
+  .btn-secondary:active{ filter:brightness(.96); }
+
+  .toggle-group{ display:inline-flex; border:1px solid var(--border-strong); border-radius:9px; overflow:hidden; }
+  .toggle-btn{
+    font-family:'Public Sans', sans-serif; font-weight:600; font-size:.82rem; cursor:pointer;
+    background:var(--surface-2); color:var(--ink-soft); border:none; padding:8px 14px;
+  }
+  .toggle-btn + .toggle-btn{ border-left:1px solid var(--border-strong); }
+  .toggle-btn.active{ background:var(--brass); color:#1C1204; }
+
+  /* ---------- Results ---------- */
+  .results-stack{ display:flex; flex-direction:column; gap:18px; }
+  .section-title{ font-size:1.15rem; margin-bottom:14px; }
+  .income-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(210px,1fr)); gap:12px; }
+  .income-card{
+    border:1px solid var(--border); border-radius:11px; padding:14px 15px; background:var(--surface-2);
+  }
+  .income-card .k{ font-size:.74rem; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-faint); font-weight:600; margin-bottom:6px; }
+  .income-card .v{ font-size:1.35rem; font-weight:600; color:var(--ink); }
+  .income-card .d{ font-size:.78rem; color:var(--ink-soft); margin-top:4px; line-height:1.4; }
+  .income-card.accent{ border-color:var(--forest); background:var(--forest-wash); }
+  .income-card.accent .v{ color:var(--forest); }
+
+  .gap-warning{
+    border:1px solid var(--rust); background:var(--rust-wash); border-radius:11px;
+    padding:12px 14px; font-size:.85rem; color:var(--ink); line-height:1.5; display:none;
+  }
+  .gap-warning.show{ display:block; }
+  .gap-warning strong{ color:var(--rust); }
+
+  .chart-wrap{ position:relative; height:320px; }
+  .legend-row{ display:flex; gap:16px; flex-wrap:wrap; margin-top:10px; font-size:.8rem; color:var(--ink-soft); }
+  .legend-row span{ display:inline-flex; align-items:center; gap:6px; }
+  .swatch{ width:10px; height:10px; border-radius:3px; display:inline-block; }
+
+  table{ width:100%; border-collapse:collapse; font-size:.85rem; }
+  .table-scroll{ overflow-x:auto; }
+  th, td{ padding:8px 10px; text-align:right; border-bottom:1px solid var(--border); white-space:nowrap; }
+  th:first-child, td:first-child{ text-align:left; }
+  th{ font-size:.72rem; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-faint); font-weight:600; }
+  tbody tr:last-child td{ font-weight:600; border-bottom:none; background:var(--surface-2); }
+
+  details{ border:1px solid var(--border); border-radius:11px; padding:4px 15px; background:var(--surface-2); }
+  details + details{ margin-top:10px; }
+  summary{ cursor:pointer; padding:12px 0; font-weight:600; font-size:.92rem; color:var(--ink); }
+  summary::marker{ color:var(--brass-ink); }
+  .details-body{ padding-bottom:14px; font-size:.85rem; color:var(--ink-soft); line-height:1.6; }
+  .details-body p{ margin:0 0 10px; }
+  .details-body p:last-child{ margin-bottom:0; }
+  .details-body code{ background:var(--surface); border:1px solid var(--border); border-radius:4px; padding:1px 5px; font-size:.85em; }
+
+  footer.foot{
+    max-width:1180px; margin:36px auto 0; font-size:.78rem; color:var(--ink-faint);
+    border-top:1px solid var(--border); padding-top:16px; line-height:1.6;
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow">Retirement &amp; Social Security Projection</div>
+    <h1 class="title">The Long Run</h1>
+    <p class="subhead">Enter your own numbers below to project retirement savings, an inflation-adjusted withdrawal income, and an estimated Social Security benefit &mdash; then download the full report as a PDF.</p>
+    <div class="disclaimer-strip">
+      <span>&#9432;</span>
+      <span><strong>This is an educational planning tool, not personalized financial, tax, or Social Security advice.</strong> It relies on simplified models and your own assumptions about future returns, inflation, and salary growth &mdash; see &ldquo;Methodology &amp; assumptions&rdquo; below for exactly what's simplified. For a plan you can rely on, talk to a fee-only fiduciary advisor.</span>
+    </div>
+  </header>
+
+  <section class="hero" aria-label="Projected balance at retirement">
+    <div class="hero-tile nominal">
+      <span class="tag">Future (nominal) dollars</span>
+      <span class="big-number" id="heroNominal">&mdash;</span>
+      <span class="cap">What your accounts actually total on paper the year you retire, before adjusting for inflation.</span>
+    </div>
+    <div class="hero-tile real">
+      <span class="tag">Today's purchasing power</span>
+      <span class="big-number" id="heroReal">&mdash;</span>
+      <span class="cap">The same balance, deflated to what it can buy in <span id="curYearLabel">2026</span> dollars.</span>
+    </div>
+    <div class="hero-tile mnd">
+      <span class="tag">1996 purchasing power</span>
+      <span class="big-number" id="heroMnd">&mdash;</span>
+      <span class="cap"><em>The Millionaire Next Door</em> made &ldquo;millionaire&rdquo; a household benchmark in 1996 &mdash; here's your total in that year's dollars.</span>
+    </div>
+    <p class="hero-note">Example scenario shown below &mdash; a 30-year-old earning $75,000, retiring at 65. Adjust any field to see your own projection update live.</p>
+  </section>
+
+  <div class="layout">
+    <aside class="panel inputs">
+      <form id="calcForm">
+        <fieldset>
+          <legend>You &amp; your timeline</legend>
+          <div class="two-col">
+            <div class="field">
+              <label for="currentAge">Current age</label>
+              <input type="number" id="currentAge" min="18" max="80" step="1" value="30">
+            </div>
+            <div class="field">
+              <label for="retirementAge">Retirement age</label>
+              <input type="number" id="retirementAge" min="45" max="80" step="1" value="65">
+            </div>
+          </div>
+          <div class="two-col">
+            <div class="field">
+              <label for="filingStatus">Tax filing status</label>
+              <select id="filingStatus">
+                <option value="single" selected>Single</option>
+                <option value="mfj">Married filing jointly</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="workStartAge">Career started at age</label>
+              <input type="number" id="workStartAge" min="16" max="40" step="1" value="22">
+            </div>
+          </div>
+          <p class="grp-note">Career-start age is only used to build a proxy earnings history for the Social Security estimate.</p>
+          <div class="two-col">
+            <div class="field">
+              <label for="sex">Sex</label>
+              <select id="sex">
+                <option value="male" selected>Male</option>
+                <option value="female">Female</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="deathAge">Plan until age</label>
+              <input type="number" id="deathAge" min="0" max="110" step="1" value="78">
+              <div class="unit">defaults from SSA life-expectancy tables</div>
+            </div>
+          </div>
+          <p class="grp-note">This sets how long your retirement income and balances are projected. The default is your SSA-tabulated remaining life expectancy at your current age &mdash; but that's a median, so about half of people live longer. Consider planning to an older age than the default if you'd rather be conservative.</p>
+        </fieldset>
+
+        <fieldset>
+          <legend>Salary</legend>
+          <div class="two-col">
+            <div class="field">
+              <label for="currentSalary">Current annual salary</label>
+              <input type="number" id="currentSalary" min="0" step="1000" value="75000">
+            </div>
+            <div class="field">
+              <label for="salaryGrowthRate">Annual salary growth</label>
+              <input type="number" id="salaryGrowthRate" min="0" max="15" step="0.1" value="3.5">
+              <div class="unit">% per year, nominal (raises &amp; promotions)</div>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Traditional accounts</legend>
+          <p class="grp-note">401(k)/403(b) + traditional IRA, combined. Grows tax-deferred; withdrawals taxed as ordinary income.</p>
+          <div class="two-col">
+            <div class="field">
+              <label for="traditionalBalance">Current balance</label>
+              <input type="number" id="traditionalBalance" min="0" step="500" value="20000">
+            </div>
+            <div class="field">
+              <label for="traditionalContribPct">You contribute</label>
+              <input type="number" id="traditionalContribPct" min="0" max="100" step="0.5" value="6">
+              <div class="unit">% of salary, pre-tax</div>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Roth accounts</legend>
+          <p class="grp-note">Roth 401(k) + Roth IRA, combined. Grows and withdraws entirely tax-free.</p>
+          <div class="two-col">
+            <div class="field">
+              <label for="rothBalance">Current balance</label>
+              <input type="number" id="rothBalance" min="0" step="500" value="8000">
+            </div>
+            <div class="field">
+              <label for="rothContribPct">You contribute</label>
+              <input type="number" id="rothContribPct" min="0" max="100" step="0.5" value="4">
+              <div class="unit">% of salary, Roth</div>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Employer 401(k) match</legend>
+          <p class="grp-note">Applies to your combined Traditional + Roth 401(k) contributions above &mdash; most employers match either. The match dollars themselves are always deposited pre-tax, into your Traditional balance, even if your own contributions are Roth.</p>
+          <div class="two-col">
+            <div class="field">
+              <label for="employerMatchRate">Match rate</label>
+              <input type="number" id="employerMatchRate" min="0" max="200" step="5" value="100">
+              <div class="unit">% (100 = dollar-for-dollar)</div>
+            </div>
+            <div class="field">
+              <label for="employerMatchCapPct">Match cap</label>
+              <input type="number" id="employerMatchCapPct" min="0" max="100" step="0.5" value="4">
+              <div class="unit">% of salary matched</div>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Taxable brokerage</legend>
+          <p class="grp-note">Ordinary investing account. Withdrawals of gains are taxed at long-term capital-gains rates.</p>
+          <div class="two-col">
+            <div class="field">
+              <label for="taxableBalance">Current balance</label>
+              <input type="number" id="taxableBalance" min="0" step="500" value="5000">
+            </div>
+            <div class="field">
+              <label for="taxableContribPct">You invest</label>
+              <input type="number" id="taxableContribPct" min="0" max="100" step="0.5" value="2">
+              <div class="unit">% of salary</div>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>ESOP</legend>
+          <p class="grp-note">Employee Stock Ownership Plan. Company-funded (not your own payroll deferral); taxed as ordinary income when withdrawn, like a 401(k). Grows with your company's stock value, not the market &mdash; see methodology below.</p>
+          <div class="two-col">
+            <div class="field">
+              <label for="esopBalance">Current value</label>
+              <input type="number" id="esopBalance" min="0" step="500" value="0">
+            </div>
+            <div class="field">
+              <label for="esopContribPct">Company contributes</label>
+              <input type="number" id="esopContribPct" min="0" max="100" step="0.5" value="0">
+              <div class="unit">% of salary/yr, today</div>
+            </div>
+          </div>
+          <div class="two-col">
+            <div class="field">
+              <label for="esopDilutionRate">Allocation decay</label>
+              <input type="number" id="esopDilutionRate" min="0" max="20" step="0.5" value="3">
+              <div class="unit">%/yr &mdash; your share shrinks as the company adds employees</div>
+            </div>
+            <div class="field">
+              <label for="esopGrowthRate">Expected ESOP growth</label>
+              <input type="number" id="esopGrowthRate" min="-10" max="30" step="0.5" value="7">
+              <div class="unit">%/yr &mdash; your company's stock, not the S&amp;P 500</div>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Market &amp; inflation assumptions</legend>
+          <div class="two-col">
+            <div class="field">
+              <label for="expectedReturn">Expected annual return</label>
+              <input type="number" id="expectedReturn" min="0" max="20" step="0.1" value="10">
+              <div class="unit">% nominal &mdash; long-run S&amp;P 500 average is roughly 10&ndash;11.5%</div>
+            </div>
+            <div class="field">
+              <label for="inflationRate">Assumed inflation</label>
+              <input type="number" id="inflationRate" min="0" max="10" step="0.1" value="3">
+              <div class="unit">% per year</div>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Social Security timing</legend>
+          <p class="grp-note">You can start Social Security any time from 62 to 70. Claiming earlier means a smaller monthly check for longer; claiming later means a bigger check for fewer years. We calculate a recommended claiming age for you below based on your full projection &mdash; use it as a starting point, or set your own.</p>
+          <div class="field">
+            <label for="ssClaimAge">Claim Social Security at age</label>
+            <input type="number" id="ssClaimAge" min="62" max="70" step="1" value="67">
+            <div class="unit" id="ssClaimAgeHint">defaults to our recommended age once calculated</div>
+          </div>
+          <button type="button" class="btn-secondary" id="useRecommendedSSBtn">Use recommended age</button>
+        </fieldset>
+
+        <fieldset>
+          <legend>Trust &amp; legacy</legend>
+          <p class="grp-note">Whatever's left in your accounts at death is modeled as passing into a trust. This estimates how long it could last and what it could pay out, assuming the trustees spend a fixed percentage of the balance each year and the rest stays invested.</p>
+          <div class="field">
+            <label for="trustSpendRate">Trust annual spend rate</label>
+            <input type="number" id="trustSpendRate" min="0" max="20" step="0.25" value="4">
+            <div class="unit">% of trust balance distributed each year</div>
+          </div>
+        </fieldset>
+
+        <div id="validationMsg" class="grp-note" style="color:var(--rust); display:none;"></div>
+      </form>
+
+      <button type="button" class="btn" id="downloadPdfBtn">Download full PDF report</button>
+      <div class="btn-status" id="pdfStatus"></div>
+    </aside>
+
+    <section class="results-stack">
+      <div class="panel" style="padding:16px 20px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+          <div style="font-size:.85rem; color:var(--ink-soft);">Show dollar figures below as:</div>
+          <div class="toggle-group" role="group" aria-label="Dollar basis">
+            <button type="button" class="toggle-btn active" id="modeNominalBtn" data-mode="nominal">Nominal (future $)</button>
+            <button type="button" class="toggle-btn" id="modeTodayBtn" data-mode="today">Today's $ (real)</button>
+          </div>
+        </div>
+        <p class="grp-note" style="margin:8px 0 0;">The three balance figures above always show all three bases side by side. Everything below &mdash; the chart, tables, and income figures &mdash; uses whichever basis you pick here, so they all speak the same language.</p>
+      </div>
+      <div class="panel">
+        <h2 class="section-title">Retirement income</h2>
+        <div class="income-grid">
+          <div class="income-card">
+            <div class="k">Portfolio withdrawal</div>
+            <div class="v" id="withdrawalReal">&mdash;</div>
+            <div class="d"><span id="swrValue">4.0</span>% withdrawal rate, age-adjusted &middot; <span id="withdrawalBasisNote">today's dollars</span></div>
+          </div>
+          <div class="income-card">
+            <div class="k">Social Security (est.)</div>
+            <div class="v" id="ssAnnual">&mdash;</div>
+            <div class="d">Claiming at age <span id="ssClaimAgeDisplay">65</span> &middot; <span id="ssBasisNote">today's dollars</span></div>
+          </div>
+          <div class="income-card">
+            <div class="k">Combined, pre-tax</div>
+            <div class="v" id="grossIncome">&mdash;</div>
+            <div class="d">Withdrawal + Social Security, before federal tax</div>
+          </div>
+          <div class="income-card accent">
+            <div class="k">Combined, after federal tax</div>
+            <div class="v" id="afterTaxIncome">&mdash;</div>
+            <div class="d">Effective federal rate: <span id="effTaxRate">&mdash;</span></div>
+          </div>
+        </div>
+        <div class="gap-warning" id="gapWarning" style="margin-top:12px;">
+          <strong>Bridge-year note:</strong> <span id="gapWarningText"></span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2 class="section-title">Balance growth by account</h2>
+        <div class="chart-wrap"><canvas id="growthChart"></canvas></div>
+        <div class="legend-row">
+          <span><span class="swatch" style="background:var(--chart-trad)"></span>Traditional</span>
+          <span><span class="swatch" style="background:var(--chart-roth)"></span>Roth</span>
+          <span><span class="swatch" style="background:var(--chart-taxable)"></span>Taxable brokerage</span>
+          <span><span class="swatch" style="background:var(--chart-stock)"></span>ESOP</span>
+        </div>
+        <p class="grp-note" style="margin-top:10px;">Shown from today through retirement (the accumulation phase), in <span id="chartBasisNote">nominal (future) dollars</span>. See &ldquo;Year-by-year retirement income&rdquo; below for what happens after you stop working.</p>
+      </div>
+
+      <div class="panel">
+        <h2 class="section-title">Milestones (accumulation)</h2>
+        <p class="grp-note" style="margin:0 0 12px;">In <span id="milestoneBasisNote">nominal (future) dollars</span>.</p>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr><th>Age</th><th>Year</th><th>Salary</th><th>Traditional</th><th>Roth</th><th>Taxable</th><th>ESOP</th><th>Total</th></tr>
+            </thead>
+            <tbody id="milestoneBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2 class="section-title">Social Security timing</h2>
+        <p class="grp-note" style="margin:0 0 12px;">We ran your full retirement projection at every claiming age from 62 to 70 and compared total lifetime after-tax income plus what's left over at death, in <span id="ssTableBasisNote">nominal (future) dollars</span>. Here's what that comparison found.</p>
+        <div class="income-grid">
+          <div class="income-card accent">
+            <div class="k">Recommended claiming age</div>
+            <div class="v" id="recommendedSSAge">&mdash;</div>
+            <div class="d" id="recommendedSSNote">maximizes lifetime after-tax income + legacy</div>
+          </div>
+          <div class="income-card">
+            <div class="k">Using your chosen age</div>
+            <div class="v" id="chosenSSAge">&mdash;</div>
+            <div class="d" id="chosenSSNote">&mdash;</div>
+          </div>
+        </div>
+        <div class="table-scroll" style="margin-top:14px;">
+          <table>
+            <thead>
+              <tr><th>Claim age</th><th id="ssColAnnual">Annual benefit</th><th id="ssColLifetime">Lifetime after-tax income + legacy</th></tr>
+            </thead>
+            <tbody id="ssCompareBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2 class="section-title">Year-by-year retirement income</h2>
+        <p class="grp-note" style="margin:0 0 12px;">Every year from retirement through your planning age (<span id="deathAgeNote">&mdash;</span>), in <span id="yearlyBasisNote">today's dollars</span>. RMD rows show amounts you're required to withdraw whether or not you need the income; anything beyond your target spending is reinvested in your taxable account.</p>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr><th>Age</th><th>Year</th><th>Social Security</th><th>Traditional</th><th>Roth</th><th>Taxable</th><th>ESOP</th><th>RMD (forced)</th><th>Gross income</th><th>Federal tax</th><th>After-tax income</th><th>Ending balance</th></tr>
+            </thead>
+            <tbody id="retirementIncomeBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2 class="section-title">Legacy &amp; trust</h2>
+        <p class="grp-note" style="margin:0 0 12px;">Whatever remains across your accounts at death (age <span id="trustDeathAgeNote">&mdash;</span>) is modeled as funding a trust that grows at the real, inflation-adjusted market rate and pays out a fixed percentage of its balance each year.</p>
+        <div class="income-grid">
+          <div class="income-card">
+            <div class="k">Balance at death</div>
+            <div class="v" id="trustSeedBalance">&mdash;</div>
+            <div class="d"><span id="trustBasisNote">today's dollars</span> &middot; seeds the trust</div>
+          </div>
+        </div>
+        <div class="table-scroll" style="margin-top:14px;">
+          <table>
+            <thead>
+              <tr><th>Years after death</th><th>Trust balance</th><th>Annual distribution</th></tr>
+            </thead>
+            <tbody id="trustBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2 class="section-title">Methodology &amp; assumptions</h2>
+        <details open>
+          <summary>How the 4%-rule withdrawal is adjusted for retirement age</summary>
+          <div class="details-body">
+            <p>The classic 4% rule (Bengen, 1994) assumes a ~30-year retirement starting at 65. There's no single official formula for adjusting it to other ages, so this tool uses a transparent heuristic: <code>withdrawal rate = 4.0% + 0.10% for every year your retirement age is above 65</code> (and &minus;0.10% for every year below), floored at 2.5% and capped at 6.0%. Retiring earlier means a longer time the portfolio has to last, so a lower starting withdrawal rate is more conservative; retiring later shortens that horizon. Treat this as a starting point, not a guarantee &mdash; actual safe withdrawal rates depend heavily on market conditions at retirement (sequence-of-returns risk), portfolio composition, and how much of a legacy you want to leave.</p>
+          </div>
+        </details>
+        <details>
+          <summary>How the Social Security estimate works</summary>
+          <div class="details-body">
+            <p>This uses the real, public SSA benefit formula &mdash; but a <strong>simplified proxy</strong> for your earnings history, since this tool only knows your current salary, not your actual 35-year record. It projects your salary backward to your career-start age and forward to retirement using your assumed salary growth <em>above inflation</em>, caps each year at the Social Security taxable maximum ($184,500 for 2026), takes your highest 35 years (zero-filling any missing years), and divides by 420 months to get your Average Indexed Monthly Earnings (AIME).</p>
+            <p>AIME then runs through the actual 2026 bend-point formula: 90% of the first $1,226 of AIME, 32% of the next amount up to $7,391, and 15% above that, giving your Primary Insurance Amount (PIA) at Full Retirement Age (which depends on your birth year). Your chosen Social Security claiming age (62&ndash;70, set near the bottom of the form) then adjusts that PIA up or down from Full Retirement Age: reduced by 5/9% per month for the first 36 months claimed early, 5/12% per month beyond that, or increased 2/3% per month (i.e. 8%/year) for each month claimed after Full Retirement Age, up to 70. If you retire before you claim, that gap is a bridge period your portfolio has to cover on its own &mdash; the tool flags it separately. The result is presented in today's dollars.</p>
+          </div>
+        </details>
+        <details>
+          <summary>How taxes are estimated</summary>
+          <div class="details-body">
+            <p>The income figures use 2026 federal tax law only (no state or local taxes) and are computed in today's dollars using today's brackets and standard deduction &mdash; a reasonable simplification since both are adjusted for inflation annually and roughly move together over time. Traditional-account and ESOP withdrawals are taxed as ordinary income; Roth withdrawals are entirely tax-free; taxable-brokerage withdrawals are taxed only on their embedded gain (tracked from your contributions vs. growth), at long-term capital-gains rates, stacked on top of your ordinary income. The taxable share of your Social Security benefit is estimated using the IRS's combined-income test (50%/85% thresholds).</p>
+            <p>In retirement, this tool draws down your four account types proportionally to their share of your balance each year &mdash; a simplification for illustration, and the basis for the year-by-year table below. Once you reach the age Required Minimum Distributions kick in, if the RMD on your Traditional or ESOP balance exceeds what proportional drawdown would have taken, the tool forces the larger RMD amount out (as the IRS requires) and reinvests anything beyond your target spending, after tax, into your taxable account. In practice, a tax-efficient withdrawal order (often taxable, then traditional and ESOP, then Roth last) can meaningfully reduce lifetime taxes; a financial advisor or tax professional can help sequence this properly.</p>
+          </div>
+        </details>
+        <details>
+          <summary>How your planning age (life expectancy) is set</summary>
+          <div class="details-body">
+            <p>The &ldquo;plan until age&rdquo; field defaults to your current age plus your remaining life expectancy from the SSA's Period Life Table, interpolated for your current age and the sex you select. That table is a <em>median</em> &mdash; roughly half of people at any given age go on to live longer than it predicts &mdash; so it's a reasonable starting point, not a guarantee, and the field is fully editable. If you'd rather plan conservatively (i.e. make sure your money doesn't run out even if you live longer than average), raise it; family longevity, health, and lifestyle are all things a life expectancy table can't see.</p>
+          </div>
+        </details>
+        <details>
+          <summary>How Required Minimum Distributions (RMDs) are modeled</summary>
+          <div class="details-body">
+            <p>Under SECURE 2.0, RMDs on Traditional and ESOP balances begin at age 75 if you were born in 1960 or later, or age 73 if born earlier &mdash; this tool derives your birth year from your current age and applies the correct start age automatically. Each year at or past that age, the required withdrawal is your prior-year-end balance in that bucket divided by the IRS Uniform Lifetime Table divisor for your age (e.g. 26.5 at 73, falling toward 6.4 by age 100). If your target spending already calls for more than the RMD, nothing changes; if the RMD is larger, the extra is withdrawn, taxed, and the after-tax remainder is added to your taxable account rather than spent &mdash; a simplification, since real RMD-driven reinvestment decisions depend on your broader financial picture. Roth accounts have no RMDs under current law, which this tool reflects.</p>
+          </div>
+        </details>
+        <details>
+          <summary>How the ESOP is modeled</summary>
+          <div class="details-body">
+            <p>An Employee Stock Ownership Plan is an employer-funded retirement plan, not a payroll deferral &mdash; the company contributes shares or cash to buy shares on your behalf, typically allocated across participants roughly in proportion to compensation, and taxed as ordinary income when distributed (like a 401(k)), which is why this tool treats ESOP withdrawals the same way it treats Traditional withdrawals. Two things distinguish it from a 401(k) balance here: it grows at your own assumed rate for your company's stock, not the broad-market return you set elsewhere (company-specific results can run well above or below the S&amp;P 500); and its contribution rate <em>decays</em> over time by the &ldquo;allocation decay&rdquo; percentage you set. That decay is a modeling simplification for a real, well-documented dynamic &mdash; as companies mature, employee headcount tends to grow faster than the share pool set aside for the ESOP, so each individual's allocation as a share of pay tends to shrink over the years even as the plan overall keeps growing; newer/smaller/fast-growing companies often see this more sharply than mature ones. There's no single public formula for that decay rate, so the default (3%/year) is a reasonable illustrative starting point, not a sourced constant &mdash; adjust it if you know your company's actual allocation trend. This tool does not model vesting schedules or cliffs (grants are treated as immediately vested), single-company concentration risk (an ESOP is far less diversified than a broad index, and a real plan should treat that risk separately from this tool's constant-return assumption), or the specific rules around ESOP distributions at separation vs. retirement.</p>
+          </div>
+        </details>
+        <details>
+          <summary>How the Social Security claiming-age recommendation works</summary>
+          <div class="details-body">
+            <p>This tool runs your entire retirement simulation &mdash; income, RMDs, taxes, account balances &mdash; once for every claiming age from 62 through 70, and scores each run by adding up your total after-tax spendable income across every retirement year plus whatever's left in your accounts at death (so a strategy that leaves more unspent legacy isn't penalized, but reinvested RMD dollars aren't double-counted). The age with the highest score is the recommendation. This approach tends to favor delaying Social Security when your other assets can comfortably bridge the gap and you have an average or longer life expectancy (delayed claiming locks in a permanently larger, inflation-protected check for the rest of your life), and favors claiming earlier when a shorter planning horizon or heavier reliance on Social Security for near-term spending changes the math. It is a mathematical optimization only &mdash; it doesn't know your health, other income sources, marital/survivor benefit coordination, or personal preference for certainty over a larger eventual check, all of which are legitimate reasons to choose differently.</p>
+          </div>
+        </details>
+        <details>
+          <summary>Dollar figures &amp; the 1996 comparison</summary>
+          <div class="details-body">
+            <p>&ldquo;Nominal&rdquo; dollars are the actual future balance with no inflation adjustment. &ldquo;Today's purchasing power&rdquo; deflates that using your assumed inflation rate. The 1996 figure goes one step further: <em>The Millionaire Next Door</em>, published in 1996, popularized &ldquo;millionaire&rdquo; as a wealth benchmark for a mass audience &mdash; but a dollar has lost more than half its value since then (U.S. CPI-U rose about 113.5% from 1996 to 2026, a factor of roughly 2.13&times;). This tool combines that historical inflation record with your own forward-looking inflation assumption to show what your retirement balance would be worth in 1996 terms &mdash; a more honest read on how far it would have gone by that era's standard of &ldquo;millionaire.&rdquo;</p>
+          </div>
+        </details>
+        <details>
+          <summary>How the nominal / today's-dollars toggle works</summary>
+          <div class="details-body">
+            <p>The three balance figures at the top always show all three bases side by side. Everything below the toggle switches together. Under the hood, accumulation (the chart and Milestones table) is computed natively in nominal, future dollars, since that's how salary and account balances actually grow; retirement onward (the Social Security comparison, Year-by-year retirement income, and Legacy &amp; trust) is computed natively in real, today's-dollars terms, since that's the only sensible unit for a target withdrawal rate and RMD math that has to hold over 20&ndash;40+ years. The toggle converts between the two by inflating or deflating each figure using your assumed inflation rate and how many years out it falls, so what you see is always internally consistent &mdash; never a mix of both.</p>
+            <p>One figure is worth calling out: in nominal mode, the Social Security comparison table's &ldquo;lifetime income + legacy&rdquo; column sums each year's actual future dollars received across decades of different years &mdash; a legitimate number (it's what would really land in your accounts over time), but an unusual one to eyeball, since a dollar received at 90 buys far less than a dollar received at 65. For apples-to-apples comparison of purchasing power across your retirement, today's-dollars mode is the more standard lens.</p>
+          </div>
+        </details>
+        <details>
+          <summary>How the post-death trust projection works</summary>
+          <div class="details-body">
+            <p>Whatever remains across your four accounts at your planning age becomes the trust's starting balance, expressed in today's dollars. Each year, the trust distributes your chosen percentage of its current balance and the remainder grows at the same market return you set for your portfolio, adjusted for inflation (i.e. in real terms, matching how the rest of this tool reports money) &mdash; it does not separately model your ESOP's company-specific return, trust or estate taxes, trustee fees, or a step-up in cost basis at death. A fixed percentage-of-balance policy is a common, simple approach real trusts use (the distribution naturally shrinks if the balance shrinks and grows if it grows), but 100 years is an extremely long extrapolation: constant-return, constant-spend-rate projections that far out should be read as illustrating the mechanics of compounding versus spending, not as a forecast anyone should rely on. Real trusts face market volatility, changing tax law, trustee decisions, and family circumstances that no formula this simple can capture.</p>
+          </div>
+        </details>
+        <details>
+          <summary>Other simplifications worth knowing</summary>
+          <div class="details-body">
+            <p>Contribution limits use 2026 IRS figures ($24,500 401(k)/403(b) elective deferral, $7,500 IRA, with age-based catch-ups) applied as one combined cap across your Traditional and Roth employee contributions &mdash; a simplification, since 401(k)/403(b) and IRA limits are technically separate. Investment growth is modeled as a constant annual return rather than year-to-year market volatility, which smooths over sequence-of-returns risk that matters a great deal in the years right before and after retirement &mdash; a real risk this tool does not capture. This tool does not account for healthcare costs, long-term care, pensions, home equity, other debts or assets, state or local taxes, or Social Security's spousal/survivor benefit rules.</p>
+          </div>
+        </details>
+      </div>
+    </section>
+  </div>
+
+  <footer class="foot">
+    <p>Figures use publicly available 2026 IRS tax brackets and standard deductions, 2026 Social Security bend points and taxable maximum, and BLS CPI-U inflation data. This tool is provided for education and planning discussion only and does not constitute financial, tax, legal, or Social Security advice. Generated by The Long Run.</p>
+  </footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/4.2.1/jspdf.umd.min.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  // ================= Config & constants =================
+  var CONFIG = {
+    CURRENT_YEAR: 2026,
+    SS_BEND1: 1226,
+    SS_BEND2: 7391,
+    SS_WAGE_BASE: 184500,
+    MND_CPI_FACTOR: 2.13,
+    MND_YEAR: 1996,
+    ELECTIVE_BASE_401K: 24500,
+    ELECTIVE_BASE_IRA: 7500,
+    CATCHUP_401K_50: 8000,
+    CATCHUP_401K_60_63: 11250,
+    CATCHUP_IRA_50: 1100,
+    RMD_TABLE: {72:27.4,73:26.5,74:25.5,75:24.6,76:23.7,77:22.9,78:22.0,79:21.1,80:20.2,81:19.4,
+      82:18.5,83:17.7,84:16.8,85:16.0,86:15.2,87:14.4,88:13.7,89:12.9,90:12.2,91:11.5,
+      92:10.8,93:10.1,94:9.5,95:8.9,96:8.4,97:7.8,98:7.3,99:6.8,100:6.4},
+    LE_AGES: [18,20,22,25,30,35,40,45,50,55,60,65,70,75,80,85,90],
+    LE_MALE:   [58.56,56.69,54.83,52.06,47.50,43.02,38.59,34.21,29.90,25.73,21.79,18.12,14.66,11.42,8.50,6.04,4.11],
+    LE_FEMALE: [63.69,61.74,59.80,56.90,52.08,47.34,42.64,38.01,33.45,29.01,24.73,20.66,16.76,13.10,9.82,7.02,4.80]
+  };
+
+  document.getElementById('curYearLabel').textContent = CONFIG.CURRENT_YEAR;
+
+  // ================= Core formulas (mirrors tested calc-engine) =================
+  function fraMonths(birthYear){
+    if (birthYear <= 1954) return 66*12;
+    if (birthYear >= 1960) return 67*12;
+    var t = {1955:66*12+2,1956:66*12+4,1957:66*12+6,1958:66*12+8,1959:66*12+10};
+    return t[birthYear];
+  }
+
+  function rmdStartAge(birthYear){
+    return birthYear >= 1960 ? 75 : 73;
+  }
+
+  function rmdDivisor(age){
+    var t = CONFIG.RMD_TABLE;
+    if (t[age] != null) return t[age];
+    if (age > 100) return Math.max(1.0, 6.4 - (age-100)*0.4);
+    return t[72];
+  }
+
+  function remainingLifeExpectancy(age, sex){
+    var ages = CONFIG.LE_AGES;
+    var table = sex === 'female' ? CONFIG.LE_FEMALE : CONFIG.LE_MALE;
+    if (age <= ages[0]) return table[0];
+    var n = ages.length;
+    if (age >= ages[n-1]){
+      var slope = (table[n-1]-table[n-2])/(ages[n-1]-ages[n-2]);
+      return Math.max(1, table[n-1] + slope*(age-ages[n-1]));
+    }
+    for (var i=0; i<n-1; i++){
+      if (age >= ages[i] && age <= ages[i+1]){
+        var frac = (age-ages[i])/(ages[i+1]-ages[i]);
+        return table[i] + frac*(table[i+1]-table[i]);
+      }
+    }
+    return table[n-1];
+  }
+
+  function defaultDeathAge(currentAge, sex){
+    return Math.round(currentAge + remainingLifeExpectancy(currentAge, sex));
+  }
+
+  function taxTables(filingStatus){
+    if (filingStatus === 'mfj'){
+      return {
+        stdDeduction: 32200,
+        brackets: [[0,.10],[24800,.12],[100800,.22],[211400,.24],[403550,.32],[512450,.35],[768700,.37]],
+        ltcg: {zero:98900, fifteen:613700},
+        ssThresholds: {t1:32000, t2:44000}
+      };
+    }
+    return {
+      stdDeduction: 16100,
+      brackets: [[0,.10],[12400,.12],[50400,.22],[105700,.24],[201775,.32],[256225,.35],[640600,.37]],
+      ltcg: {zero:49450, fifteen:545500},
+      ssThresholds: {t1:25000, t2:34000}
+    };
+  }
+
+  function progressiveTax(taxableIncome, brackets){
+    if (taxableIncome <= 0) return 0;
+    var tax = 0;
+    for (var i=0; i<brackets.length; i++){
+      var start = brackets[i][0], rate = brackets[i][1];
+      var next = (i+1 < brackets.length) ? brackets[i+1][0] : Infinity;
+      if (taxableIncome > start){ tax += (Math.min(taxableIncome,next)-start)*rate; }
+      else break;
+    }
+    return tax;
+  }
+
+  function ltcgTax(ordinaryTaxableIncome, gainAmount, ltcg){
+    if (gainAmount <= 0) return 0;
+    var remaining = gainAmount, tax = 0, floor = Math.max(0, ordinaryTaxableIncome);
+    var zeroRoom = Math.max(0, ltcg.zero - floor);
+    var zeroUsed = Math.min(remaining, zeroRoom);
+    remaining -= zeroUsed; floor += zeroUsed;
+    var fifteenRoom = Math.max(0, ltcg.fifteen - floor);
+    var fifteenUsed = Math.min(remaining, fifteenRoom);
+    tax += fifteenUsed*0.15;
+    remaining -= fifteenUsed; floor += fifteenUsed;
+    tax += remaining*0.20;
+    return tax;
+  }
+
+  function taxableSocialSecurity(ssAnnual, otherOrdinaryIncome, thresholds){
+    if (ssAnnual <= 0) return 0;
+    var combined = otherOrdinaryIncome + ssAnnual*0.5;
+    if (combined <= thresholds.t1) return 0;
+    if (combined <= thresholds.t2) return Math.min(0.5*ssAnnual, 0.5*(combined-thresholds.t1));
+    var tier1 = Math.min(0.5*(thresholds.t2-thresholds.t1), 0.5*ssAnnual);
+    var tier2 = 0.85*(combined-thresholds.t2);
+    return Math.min(0.85*ssAnnual, tier1+tier2);
+  }
+
+  function electiveCapForAge(age){
+    var c401=0, cIra=0;
+    if (age>=60 && age<=63){ c401=CONFIG.CATCHUP_401K_60_63; cIra=CONFIG.CATCHUP_IRA_50; }
+    else if (age>=50){ c401=CONFIG.CATCHUP_401K_50; cIra=CONFIG.CATCHUP_IRA_50; }
+    return CONFIG.ELECTIVE_BASE_401K + CONFIG.ELECTIVE_BASE_IRA + c401 + cIra;
+  }
+
+  function swrForAge(retirementAge){
+    var swr = 4.0 + 0.10*(retirementAge-65);
+    return Math.min(6.0, Math.max(2.5, swr));
+  }
+
+  function piaFromAIME(aime){
+    var b1=CONFIG.SS_BEND1, b2=CONFIG.SS_BEND2;
+    if (aime<=b1) return aime*0.90;
+    if (aime<=b2) return b1*0.90 + (aime-b1)*0.32;
+    return b1*0.90 + (b2-b1)*0.32 + (aime-b2)*0.15;
+  }
+
+  function adjustPIAForClaimAge(piaMonthly, claimAge, fraMo){
+    var claimMonths = Math.round(claimAge*12);
+    var diff = claimMonths - fraMo;
+    if (diff < 0){
+      var monthsEarly = -diff;
+      var first36 = Math.min(36, monthsEarly);
+      var rest = Math.max(0, monthsEarly-36);
+      var reduction = first36*(5/9/100) + rest*(5/12/100);
+      return piaMonthly*(1-reduction);
+    } else if (diff > 0){
+      var capMonths = 70*12 - fraMo;
+      var monthsLate = Math.min(diff, capMonths);
+      var increase = monthsLate*(2/3/100);
+      return piaMonthly*(1+increase);
+    }
+    return piaMonthly;
+  }
+
+  function projectBalances(inputs){
+    var years = inputs.retirementAge - inputs.currentAge;
+    var r = inputs.expectedReturn/100;
+    var esopR = inputs.esopGrowthRate/100;
+    var salary = inputs.currentSalary;
+    var bal = {traditional:inputs.traditionalBalance, roth:inputs.rothBalance, taxable:inputs.taxableBalance, esop:inputs.esopBalance||0};
+    var taxableBasis = inputs.taxableBalance;
+    var rows = [{age:inputs.currentAge, year:CONFIG.CURRENT_YEAR, salary:salary,
+      traditional:bal.traditional, roth:bal.roth, taxable:bal.taxable, esop:bal.esop,
+      total:bal.traditional+bal.roth+bal.taxable+bal.esop}];
+
+    for (var i=0; i<years; i++){
+      var age = inputs.currentAge+i;
+      var cap = electiveCapForAge(age);
+      var employeeTraditional = salary*inputs.traditionalContribPct/100;
+      var employeeRoth = salary*inputs.rothContribPct/100;
+      var totalElective = employeeTraditional+employeeRoth;
+      if (totalElective > cap && totalElective > 0){
+        var scale = cap/totalElective;
+        employeeTraditional *= scale; employeeRoth *= scale;
+      }
+      // Employer match is based on your COMBINED 401(k) deferral rate (traditional + Roth
+      // elective contributions both count toward the match), but the match dollars
+      // themselves are always deposited pre-tax, into the Traditional bucket.
+      var combinedContribPct = inputs.traditionalContribPct + inputs.rothContribPct;
+      var matchedPct = Math.min(combinedContribPct, inputs.employerMatchCapPct);
+      var employerMatch = salary*matchedPct/100*(inputs.employerMatchRate/100);
+      var taxableContrib = salary*inputs.taxableContribPct/100;
+
+      // ESOP: the company's contribution rate (as % of pay) decays over time as the
+      // employee pool sharing a roughly fixed contribution/share pool grows -- see
+      // methodology. Year i=0 uses the undiluted rate; it decays esopDilutionRate%/yr after.
+      var esopContribPct = (inputs.esopContribPct||0) * Math.pow(1 - (inputs.esopDilutionRate||0)/100, i);
+      var esopContrib = salary*esopContribPct/100;
+
+      bal.traditional = (bal.traditional+employeeTraditional+employerMatch)*(1+r);
+      bal.roth = (bal.roth+employeeRoth)*(1+r);
+      bal.taxable = (bal.taxable+taxableContrib)*(1+r);
+      bal.esop = (bal.esop+esopContrib)*(1+esopR);
+      taxableBasis += taxableContrib;
+
+      salary *= (1+inputs.salaryGrowthRate/100);
+      rows.push({age:age+1, year:CONFIG.CURRENT_YEAR+i+1, salary:salary,
+        traditional:bal.traditional, roth:bal.roth, taxable:bal.taxable, esop:bal.esop,
+        total:bal.traditional+bal.roth+bal.taxable+bal.esop});
+    }
+    return {rows:rows, finalBalances:bal, taxableBasis:taxableBasis, years:years};
+  }
+
+  function proxyEarningsHistory(inputs){
+    var realGrowth = (1+inputs.salaryGrowthRate/100)/(1+inputs.inflationRate/100) - 1;
+    var history = {};
+    history[inputs.currentAge] = inputs.currentSalary;
+    var s = inputs.currentSalary, a;
+    for (a=inputs.currentAge-1; a>=inputs.workStartAge; a--){ s = s/(1+realGrowth); history[a]=s; }
+    s = inputs.currentSalary;
+    for (a=inputs.currentAge+1; a<inputs.retirementAge; a++){ s = s*(1+realGrowth); history[a]=s; }
+    return history;
+  }
+
+  // Claim-age-independent Social Security base: birth year, FRA, AIME, PIA at FRA.
+  function computeSocialSecurityBase(inputs){
+    var birthYear = CONFIG.CURRENT_YEAR - inputs.currentAge;
+    var fraMo = fraMonths(birthYear);
+    var history = proxyEarningsHistory(inputs);
+    var earnings = [];
+    for (var a=inputs.workStartAge; a<inputs.retirementAge; a++){
+      earnings.push(Math.min(history[a]||0, CONFIG.SS_WAGE_BASE));
+    }
+    var top35 = earnings.slice().sort(function(x,y){return y-x;}).slice(0,35);
+    while (top35.length<35) top35.push(0);
+    var sum = top35.reduce(function(p,c){return p+c;},0);
+    var aime = sum/420;
+    var piaAtFRA = piaFromAIME(aime);
+    return {
+      birthYear:birthYear, fraMonths:fraMo, fraYears:fraMo/12, aime:aime, piaAtFRA:piaAtFRA,
+      rmdStartAge: rmdStartAge(birthYear)
+    };
+  }
+
+  function ssAnnualForClaimAge(ssBase, claimAge){
+    return adjustPIAForClaimAge(ssBase.piaAtFRA, claimAge, ssBase.fraMonths) * 12;
+  }
+
+  // ---- Decumulation: retirement age -> death age, year by year, real (today's) dollars ----
+  function simulateRetirement(inputs, ssClaimAge, proj, ssBase){
+    var yearsToRetirement = inputs.retirementAge - inputs.currentAge;
+    var inflFactor = Math.pow(1+inputs.inflationRate/100, yearsToRetirement);
+    var realReturn = (1+inputs.expectedReturn/100)/(1+inputs.inflationRate/100) - 1;
+    var realEsopReturn = (1+inputs.esopGrowthRate/100)/(1+inputs.inflationRate/100) - 1;
+
+    var bal = {
+      traditional: proj.finalBalances.traditional/inflFactor,
+      roth: proj.finalBalances.roth/inflFactor,
+      taxable: proj.finalBalances.taxable/inflFactor,
+      esop: proj.finalBalances.esop/inflFactor
+    };
+    var totalAtRetirementReal = bal.traditional+bal.roth+bal.taxable+bal.esop;
+    var swr = swrForAge(inputs.retirementAge);
+    var targetSpendReal = totalAtRetirementReal*swr/100;
+
+    var taxableBasisReal = proj.taxableBasis/inflFactor;
+    var gainFraction = bal.taxable > 0 ? Math.max(0, Math.min(1, 1 - taxableBasisReal/bal.taxable)) : 0;
+
+    var ssAnnualReal = ssAnnualForClaimAge(ssBase, ssClaimAge);
+    var tt = taxTables(inputs.filingStatus);
+    var rmdAge = ssBase.rmdStartAge;
+
+    var rows = [];
+    for (var age=inputs.retirementAge; age<=inputs.deathAge; age++){
+      var totalBal = bal.traditional+bal.roth+bal.taxable+bal.esop;
+      var shareTrad = totalBal > 0 ? bal.traditional/totalBal : 0;
+      var shareRoth = totalBal > 0 ? bal.roth/totalBal : 0;
+      var shareTax = totalBal > 0 ? bal.taxable/totalBal : 0;
+      var shareEsop = totalBal > 0 ? bal.esop/totalBal : 0;
+
+      var desiredTrad = Math.min(bal.traditional, targetSpendReal*shareTrad);
+      var desiredRoth = Math.min(bal.roth, targetSpendReal*shareRoth);
+      var desiredTax = Math.min(bal.taxable, targetSpendReal*shareTax);
+      var desiredEsop = Math.min(bal.esop, targetSpendReal*shareEsop);
+
+      var rmdTrad = 0, rmdEsop = 0;
+      if (age >= rmdAge){
+        var divisor = rmdDivisor(age);
+        rmdTrad = bal.traditional/divisor;
+        rmdEsop = bal.esop/divisor;
+      }
+      var actualTrad = Math.min(bal.traditional, Math.max(desiredTrad, rmdTrad));
+      var actualEsop = Math.min(bal.esop, Math.max(desiredEsop, rmdEsop));
+      var extraFromRMD = (actualTrad-desiredTrad) + (actualEsop-desiredEsop);
+
+      var ssIncome = age >= ssClaimAge ? ssAnnualReal : 0;
+
+      var ordinaryWithdrawal = actualTrad+actualEsop;
+      var taxableGain = desiredTax*gainFraction;
+      var taxableSSAmt = taxableSocialSecurity(ssIncome, ordinaryWithdrawal+taxableGain, tt.ssThresholds);
+      var ordinaryTaxableIncome = Math.max(0, ordinaryWithdrawal+taxableSSAmt-tt.stdDeduction);
+      var ordinaryTax = progressiveTax(ordinaryTaxableIncome, tt.brackets);
+      var capGainsTax = ltcgTax(ordinaryTaxableIncome, taxableGain, tt.ltcg);
+      var totalTax = ordinaryTax+capGainsTax;
+
+      var grossIncome = actualTrad+desiredRoth+desiredTax+actualEsop+ssIncome;
+      var afterTaxTotal = grossIncome-totalTax;
+      var ordinaryEffRate = ordinaryTaxableIncome > 0 ? ordinaryTax/ordinaryTaxableIncome : 0;
+      var extraAfterTax = extraFromRMD*(1-ordinaryEffRate);
+      var spendableAfterTax = afterTaxTotal-extraAfterTax;
+
+      bal.traditional = Math.max(0, bal.traditional-actualTrad)*(1+realReturn);
+      bal.roth = Math.max(0, bal.roth-desiredRoth)*(1+realReturn);
+      bal.taxable = Math.max(0, bal.taxable-desiredTax+extraAfterTax)*(1+realReturn);
+      bal.esop = Math.max(0, bal.esop-actualEsop)*(1+realEsopReturn);
+
+      rows.push({
+        age:age, year:CONFIG.CURRENT_YEAR+(age-inputs.currentAge),
+        ssIncome:ssIncome, rmdTrad:rmdTrad, rmdEsop:rmdEsop, extraFromRMD:extraFromRMD,
+        withdrawalTrad:actualTrad, withdrawalRoth:desiredRoth, withdrawalTaxable:desiredTax, withdrawalEsop:actualEsop,
+        grossIncome:grossIncome, totalTax:totalTax, afterTaxTotal:afterTaxTotal, spendableAfterTax:spendableAfterTax,
+        balTraditional:bal.traditional, balRoth:bal.roth, balTaxable:bal.taxable, balEsop:bal.esop,
+        balTotal:bal.traditional+bal.roth+bal.taxable+bal.esop
+      });
+    }
+    return {rows:rows, ssAnnualReal:ssAnnualReal, targetSpendReal:targetSpendReal, swr:swr, totalAtRetirementReal:totalAtRetirementReal, rmdAge:rmdAge};
+  }
+
+  // Objective: total lifetime after-tax resources = money actually spent across
+  // retirement + whatever is left unspent at death (avoids double-counting reinvested RMDs).
+  // Computed in real (today's) dollars, the natural unit for summing money across many years.
+  function lifetimeResourceObjective(sim){
+    var spent = sim.rows.reduce(function(s,r){ return s+r.spendableAfterTax; }, 0);
+    var legacy = sim.rows.length ? sim.rows[sim.rows.length-1].balTotal : 0;
+    return spent+legacy;
+  }
+
+  // Same objective, but each year's dollars are inflated to the nominal amount that would
+  // actually appear in that future year before summing -- "total actual future dollars
+  // received over your lifetime," for display in nominal mode.
+  function nominalLifetimeResourceObjective(sim, currentAge, inflationRatePct){
+    var infl = inflationRatePct/100;
+    var total = 0;
+    sim.rows.forEach(function(r){ total += r.spendableAfterTax * Math.pow(1+infl, r.age-currentAge); });
+    var last = sim.rows.length ? sim.rows[sim.rows.length-1] : null;
+    if (last) total += last.balTotal * Math.pow(1+infl, last.age-currentAge);
+    return total;
+  }
+
+  function recommendSSClaimAge(inputs, proj, ssBase){
+    var candidates = [62,63,64,65,66,67,68,69,70];
+    var results = candidates.map(function(age){
+      var sim = simulateRetirement(inputs, age, proj, ssBase);
+      return {claimAge:age, objective:lifetimeResourceObjective(sim), ssAnnualReal:sim.ssAnnualReal, sim:sim};
+    });
+    var best = results[0];
+    results.forEach(function(r){ if (r.objective > best.objective) best = r; });
+    return {best:best.claimAge, results:results};
+  }
+
+  // ---- Post-death trust / legacy ----
+  function simulateTrust(startBalance, spendRatePct, growthRatePct, years){
+    years = years || 100;
+    var r = growthRatePct/100;
+    var spendRate = spendRatePct/100;
+    var rows = [];
+    var bal = Math.max(0, startBalance);
+    for (var y=0; y<=years; y++){
+      var distribution = bal*spendRate;
+      if (y % 10 === 0) rows.push({yearsAfterDeath:y, balance:bal, distribution:distribution});
+      bal = Math.max(0, bal-distribution)*(1+r);
+    }
+    return rows;
+  }
+
+  function computeResults(inputs){
+    var proj = projectBalances(inputs);
+    var yearsToRetirement = inputs.retirementAge - inputs.currentAge;
+    var inflFactor = Math.pow(1+inputs.inflationRate/100, yearsToRetirement);
+    var finalTotal = proj.finalBalances.traditional + proj.finalBalances.roth + proj.finalBalances.taxable + proj.finalBalances.esop;
+
+    var nominalBalance = finalTotal;
+    var realBalance = finalTotal/inflFactor;
+    var mndBalance = finalTotal/(inflFactor*CONFIG.MND_CPI_FACTOR);
+
+    var ssBase = computeSocialSecurityBase(inputs);
+    var recommendation = recommendSSClaimAge(inputs, proj, ssBase);
+    var ssClaimAge = inputs.ssClaimAge || recommendation.best;
+    var sim = simulateRetirement(inputs, ssClaimAge, proj, ssBase);
+    var firstYear = sim.rows[0];
+
+    // The trust corpus (and everything upstream of it) is carried in today's real
+    // dollars, so it must grow at the REAL market return (nominal minus inflation), not
+    // the nominal rate, or it would silently mix nominal growth into a real-dollar figure.
+    var realReturnForTrust = ((1+inputs.expectedReturn/100)/(1+inputs.inflationRate/100) - 1) * 100;
+    var trust = simulateTrust(sim.rows.length ? sim.rows[sim.rows.length-1].balTotal : 0, inputs.trustSpendRate, realReturnForTrust, 100);
+
+    return {
+      proj:proj, yearsToRetirement:yearsToRetirement, inflFactor:inflFactor,
+      nominalBalance:nominalBalance, realBalance:realBalance, mndBalance:mndBalance,
+      ssBase:ssBase, ssClaimAge:ssClaimAge, recommendation:recommendation,
+      sim:sim, firstYear:firstYear,
+      swr:sim.swr, grossWithdrawalReal:sim.targetSpendReal,
+      trust:trust
+    };
+  }
+
+  // ================= Formatting =================
+  function fmtUSD(n, decimals){
+    if (!isFinite(n)) return '—';
+    return n.toLocaleString('en-US', {style:'currency', currency:'USD', maximumFractionDigits: decimals||0});
+  }
+  function fmtCompact(n){
+    if (!isFinite(n)) return '—';
+    var sign = n<0 ? '-' : '';
+    n = Math.abs(n);
+    if (n >= 1e6) return sign+'$'+(n/1e6).toFixed(2)+'M';
+    if (n >= 1e3) return sign+'$'+(n/1e3).toFixed(0)+'K';
+    return sign+fmtUSD(n);
+  }
+  function fmtPct(n, decimals){ return n.toFixed(decimals||1)+'%'; }
+
+  // ================= Nominal / today's-dollars display basis =================
+  // Everywhere below the three "what you'll retire with" hero figures, dollar amounts are
+  // shown consistently in ONE basis at a time, chosen by the toggle: either the actual future
+  // (nominal) dollars, or today's purchasing power (real, inflation-deflated). Accumulation
+  // balances (chart/milestones) are computed natively in nominal dollars; everything from
+  // retirement onward (income table, SS comparison, trust) is computed natively in real,
+  // today's-dollars terms (see methodology). These helpers convert between the two, anchored
+  // to the calendar year each figure actually falls in.
+  var displayMode = 'nominal';
+  function inflFactorAtAge(age, inputs){ return Math.pow(1+inputs.inflationRate/100, age-inputs.currentAge); }
+  function nominalFromReal(real, age, inputs){ return real * inflFactorAtAge(age, inputs); }
+  function realFromNominal(nominal, age, inputs){ return nominal / inflFactorAtAge(age, inputs); }
+  function basisLabel(){ return displayMode==='nominal' ? 'nominal (future) dollars' : "today's dollars"; }
+
+  // ================= Read inputs =================
+  var deathAgeTouched = false;
+  var ssClaimAgeTouched = false;
+  document.getElementById('deathAge').addEventListener('input', function(){ deathAgeTouched = true; });
+  document.getElementById('ssClaimAge').addEventListener('input', function(){ ssClaimAgeTouched = true; });
+  document.getElementById('useRecommendedSSBtn').addEventListener('click', function(){
+    ssClaimAgeTouched = false;
+    render();
+  });
+
+  function readInputs(){
+    function num(id){ return parseFloat(document.getElementById(id).value); }
+    return {
+      currentAge: num('currentAge'),
+      retirementAge: num('retirementAge'),
+      filingStatus: document.getElementById('filingStatus').value,
+      workStartAge: num('workStartAge'),
+      currentSalary: num('currentSalary'),
+      salaryGrowthRate: num('salaryGrowthRate'),
+      sex: document.getElementById('sex').value,
+      deathAge: num('deathAge'),
+      traditionalBalance: num('traditionalBalance'),
+      traditionalContribPct: num('traditionalContribPct'),
+      employerMatchRate: num('employerMatchRate'),
+      employerMatchCapPct: num('employerMatchCapPct'),
+      rothBalance: num('rothBalance'),
+      rothContribPct: num('rothContribPct'),
+      taxableBalance: num('taxableBalance'),
+      taxableContribPct: num('taxableContribPct'),
+      esopBalance: num('esopBalance'),
+      esopContribPct: num('esopContribPct'),
+      esopDilutionRate: num('esopDilutionRate'),
+      esopGrowthRate: num('esopGrowthRate'),
+      expectedReturn: num('expectedReturn'),
+      inflationRate: num('inflationRate'),
+      ssClaimAge: ssClaimAgeTouched ? num('ssClaimAge') : null,
+      trustSpendRate: num('trustSpendRate')
+    };
+  }
+
+  function validate(inputs){
+    var msgEl = document.getElementById('validationMsg');
+    var errors = [];
+    if (!(inputs.retirementAge > inputs.currentAge)) errors.push('Retirement age must be greater than current age.');
+    if (!(inputs.workStartAge <= inputs.currentAge)) errors.push('Career-start age must be at or before current age.');
+    if (!(inputs.deathAge >= inputs.retirementAge)) errors.push('Planning age must be at or after retirement age.');
+    if (inputs.ssClaimAge !== null && !(inputs.ssClaimAge >= 62 && inputs.ssClaimAge <= 70)) errors.push('Social Security claiming age must be between 62 and 70.');
+    Object.keys(inputs).forEach(function(k){
+      if (k === 'filingStatus' || k === 'sex') return;
+      if (k === 'ssClaimAge' && inputs[k] === null) return;
+      if (isNaN(inputs[k])) errors.push('All fields must be filled in.');
+    });
+    if (errors.length){
+      msgEl.textContent = errors[0];
+      msgEl.style.display = 'block';
+      return false;
+    }
+    msgEl.style.display = 'none';
+    return true;
+  }
+
+  // ================= Chart =================
+  var chart = null;
+  function isDark(){
+    var root = document.documentElement;
+    if (root.getAttribute('data-theme') === 'dark') return true;
+    if (root.getAttribute('data-theme') === 'light') return false;
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+  function chartColors(){
+    var s = getComputedStyle(document.documentElement);
+    return {
+      trad: s.getPropertyValue('--chart-trad').trim(),
+      roth: s.getPropertyValue('--chart-roth').trim(),
+      taxable: s.getPropertyValue('--chart-taxable').trim(),
+      ink: s.getPropertyValue('--ink').trim(),
+      inkSoft: s.getPropertyValue('--ink-soft').trim(),
+      border: s.getPropertyValue('--border').trim(),
+      surface: s.getPropertyValue('--surface').trim(),
+      stock: s.getPropertyValue('--chart-stock').trim()
+    };
+  }
+
+  function renderChart(results, inputs){
+    var c = chartColors();
+    var conv = function(v, age){ return displayMode==='nominal' ? v : realFromNominal(v, age, inputs); };
+    var labels = results.proj.rows.map(function(r){ return r.age; });
+    var trad = results.proj.rows.map(function(r){ return Math.round(conv(r.traditional, r.age)); });
+    var roth = results.proj.rows.map(function(r){ return Math.round(conv(r.roth, r.age)); });
+    var taxable = results.proj.rows.map(function(r){ return Math.round(conv(r.taxable, r.age)); });
+    var esop = results.proj.rows.map(function(r){ return Math.round(conv(r.esop, r.age)); });
+
+    var ctx = document.getElementById('growthChart').getContext('2d');
+    var data = {
+      labels: labels,
+      datasets: [
+        {label:'Traditional', data:trad, backgroundColor:c.trad+'CC', borderColor:c.trad, borderWidth:1.5, fill:true, stack:'s', pointRadius:0, tension:0.15},
+        {label:'Roth', data:roth, backgroundColor:c.roth+'CC', borderColor:c.roth, borderWidth:1.5, fill:true, stack:'s', pointRadius:0, tension:0.15},
+        {label:'Taxable', data:taxable, backgroundColor:c.taxable+'CC', borderColor:c.taxable, borderWidth:1.5, fill:true, stack:'s', pointRadius:0, tension:0.15},
+        {label:'ESOP', data:esop, backgroundColor:c.stock+'CC', borderColor:c.stock, borderWidth:1.5, fill:true, stack:'s', pointRadius:0, tension:0.15}
+      ]
+    };
+    var opts = {
+      responsive:true, maintainAspectRatio:false,
+      interaction:{mode:'index', intersect:false},
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          callbacks:{
+            title: function(items){ return 'Age ' + items[0].label; },
+            label: function(item){ return item.dataset.label + ': ' + fmtCompact(item.parsed.y); }
+          }
+        }
+      },
+      scales:{
+        x:{ title:{display:true, text:'Age', color:c.inkSoft}, ticks:{color:c.inkSoft}, grid:{color:c.border} },
+        y:{ stacked:true, ticks:{color:c.inkSoft, callback:function(v){ return fmtCompact(v); }}, grid:{color:c.border} }
+      }
+    };
+
+    if (chart){ chart.data = data; chart.options = opts; chart.update(); }
+    else { chart = new Chart(ctx, {type:'line', data:data, options:opts}); }
+  }
+
+  if (window.matchMedia){
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(){
+      if (window.__lastResults && window.__lastInputs) renderChart(window.__lastResults, window.__lastInputs);
+    });
+  }
+
+  // ================= Render =================
+  function renderMilestones(results, inputs){
+    var body = document.getElementById('milestoneBody');
+    body.innerHTML = '';
+    var conv = function(v, age){ return displayMode==='nominal' ? v : realFromNominal(v, age, inputs); };
+    var rows = results.proj.rows;
+    var picks = rows.filter(function(r){ return (r.age - inputs.currentAge) % 5 === 0; });
+    if (picks[picks.length-1] !== rows[rows.length-1]) picks.push(rows[rows.length-1]);
+    picks.forEach(function(r){
+      var tr = document.createElement('tr');
+      tr.innerHTML = '<td>'+r.age+'</td><td>'+r.year+'</td><td class="num">'+fmtCompact(conv(r.salary,r.age))+
+        '</td><td class="num">'+fmtCompact(conv(r.traditional,r.age))+'</td><td class="num">'+fmtCompact(conv(r.roth,r.age))+
+        '</td><td class="num">'+fmtCompact(conv(r.taxable,r.age))+'</td><td class="num">'+fmtCompact(conv(r.esop,r.age))+
+        '</td><td class="num">'+fmtCompact(conv(r.total,r.age))+'</td>';
+      body.appendChild(tr);
+    });
+  }
+
+  function renderSSCompare(results, inputs){
+    var body = document.getElementById('ssCompareBody');
+    body.innerHTML = '';
+    var annualFor = function(r){
+      return displayMode==='nominal' ? nominalFromReal(r.ssAnnualReal, r.claimAge, inputs) : r.ssAnnualReal;
+    };
+    var objectiveFor = function(r){
+      return displayMode==='nominal' ? nominalLifetimeResourceObjective(r.sim, inputs.currentAge, inputs.inflationRate) : r.objective;
+    };
+    results.recommendation.results.forEach(function(r){
+      var tr = document.createElement('tr');
+      var isRec = r.claimAge === results.recommendation.best;
+      var isChosen = r.claimAge === results.ssClaimAge;
+      var ageLabel = r.claimAge + (isRec ? ' ★' : '');
+      tr.innerHTML = '<td>'+ageLabel+'</td><td class="num">'+fmtCompact(annualFor(r))+'/yr</td><td class="num">'+fmtCompact(objectiveFor(r))+'</td>';
+      if (isChosen){ tr.style.fontWeight = '700'; tr.style.color = 'var(--forest)'; }
+      body.appendChild(tr);
+    });
+
+    document.getElementById('recommendedSSAge').textContent = results.recommendation.best;
+    document.getElementById('chosenSSAge').textContent = results.ssClaimAge;
+    if (results.ssClaimAge === results.recommendation.best){
+      document.getElementById('chosenSSNote').textContent = 'this is the recommended age';
+    } else {
+      var chosenEntry = results.recommendation.results.filter(function(r){ return r.claimAge === results.ssClaimAge; })[0];
+      var bestEntry = results.recommendation.results.filter(function(r){ return r.claimAge === results.recommendation.best; })[0];
+      var diff = objectiveFor(bestEntry) - objectiveFor(chosenEntry);
+      document.getElementById('chosenSSNote').textContent = fmtCompact(diff) + ' less over your lifetime than the recommended age';
+    }
+  }
+
+  function renderRetirementIncome(results, inputs){
+    var body = document.getElementById('retirementIncomeBody');
+    body.innerHTML = '';
+    var conv = function(v, age){ return displayMode==='nominal' ? nominalFromReal(v, age, inputs) : v; };
+    results.sim.rows.forEach(function(r){
+      var tr = document.createElement('tr');
+      tr.innerHTML = '<td>'+r.age+'</td><td>'+r.year+'</td><td class="num">'+fmtCompact(conv(r.ssIncome,r.age))+
+        '</td><td class="num">'+fmtCompact(conv(r.withdrawalTrad,r.age))+'</td><td class="num">'+fmtCompact(conv(r.withdrawalRoth,r.age))+
+        '</td><td class="num">'+fmtCompact(conv(r.withdrawalTaxable,r.age))+'</td><td class="num">'+fmtCompact(conv(r.withdrawalEsop,r.age))+
+        '</td><td class="num">'+(r.extraFromRMD>1 ? fmtCompact(conv(r.extraFromRMD,r.age)) : '—')+
+        '</td><td class="num">'+fmtCompact(conv(r.grossIncome,r.age))+'</td><td class="num">'+fmtCompact(conv(r.totalTax,r.age))+
+        '</td><td class="num">'+fmtCompact(conv(r.afterTaxTotal,r.age))+'</td><td class="num">'+fmtCompact(conv(r.balTotal,r.age))+'</td>';
+      body.appendChild(tr);
+    });
+  }
+
+  function renderTrust(results, inputs){
+    var body = document.getElementById('trustBody');
+    body.innerHTML = '';
+    var conv = function(v, yearsAfterDeath){ return displayMode==='nominal' ? nominalFromReal(v, inputs.deathAge+yearsAfterDeath, inputs) : v; };
+    results.trust.forEach(function(r){
+      var tr = document.createElement('tr');
+      tr.innerHTML = '<td>'+r.yearsAfterDeath+'</td><td class="num">'+fmtCompact(conv(r.balance,r.yearsAfterDeath))+'</td><td class="num">'+fmtCompact(conv(r.distribution,r.yearsAfterDeath))+'</td>';
+      body.appendChild(tr);
+    });
+    document.getElementById('trustSeedBalance').textContent = fmtCompact(results.trust.length ? conv(results.trust[0].balance, 0) : 0);
+    document.getElementById('deathAgeNote').textContent = inputs.deathAge;
+    document.getElementById('trustDeathAgeNote').textContent = inputs.deathAge;
+  }
+
+  function render(){
+    if (!deathAgeTouched){
+      var sexEl = document.getElementById('sex');
+      var curAgeVal = parseFloat(document.getElementById('currentAge').value);
+      if (!isNaN(curAgeVal)){
+        document.getElementById('deathAge').value = defaultDeathAge(curAgeVal, sexEl.value);
+      }
+    }
+
+    var inputs = readInputs();
+    if (!validate(inputs)) return null;
+    var results = computeResults(inputs);
+    window.__lastResults = results;
+    window.__lastInputs = inputs;
+
+    if (!ssClaimAgeTouched){
+      document.getElementById('ssClaimAge').value = results.ssClaimAge;
+      document.getElementById('ssClaimAgeHint').textContent = 'set to our recommended age — edit to choose your own';
+    } else {
+      document.getElementById('ssClaimAgeHint').textContent = 'your chosen claiming age';
+    }
+
+    document.getElementById('heroNominal').textContent = fmtCompact(results.nominalBalance);
+    document.getElementById('heroReal').textContent = fmtCompact(results.realBalance);
+    document.getElementById('heroMnd').textContent = fmtCompact(results.mndBalance);
+
+    // Everything below the hero row is shown in whichever basis is selected. The withdrawal
+    // target and first-year figures are anchored to the year they actually occur in
+    // (retirement age), and the SS annual figure to the year benefits actually start.
+    var withdrawalDisplay = displayMode==='nominal' ? nominalFromReal(results.grossWithdrawalReal, inputs.retirementAge, inputs) : results.grossWithdrawalReal;
+    var ssAnnualDisplay = displayMode==='nominal' ? nominalFromReal(results.sim.ssAnnualReal, results.ssClaimAge, inputs) : results.sim.ssAnnualReal;
+    var grossIncomeDisplay = displayMode==='nominal' ? nominalFromReal(results.firstYear.grossIncome, inputs.retirementAge, inputs) : results.firstYear.grossIncome;
+    var afterTaxDisplay = displayMode==='nominal' ? nominalFromReal(results.firstYear.afterTaxTotal, inputs.retirementAge, inputs) : results.firstYear.afterTaxTotal;
+
+    document.getElementById('swrValue').textContent = results.swr.toFixed(2);
+    document.getElementById('withdrawalReal').textContent = fmtCompact(withdrawalDisplay) + '/yr';
+    document.getElementById('ssAnnual').textContent = fmtCompact(ssAnnualDisplay) + '/yr';
+    document.getElementById('ssClaimAgeDisplay').textContent = results.ssClaimAge;
+    document.getElementById('grossIncome').textContent = fmtCompact(grossIncomeDisplay) + '/yr';
+    document.getElementById('afterTaxIncome').textContent = fmtCompact(afterTaxDisplay) + '/yr';
+    // Ratio of tax to gross income is unchanged by uniform nominal/real scaling.
+    document.getElementById('effTaxRate').textContent = fmtPct((results.firstYear.totalTax/results.firstYear.grossIncome)*100);
+
+    var basisText = basisLabel();
+    ['withdrawalBasisNote','ssBasisNote','yearlyBasisNote','trustBasisNote','chartBasisNote','milestoneBasisNote','ssTableBasisNote'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el) el.textContent = basisText;
+    });
+    document.getElementById('ssColAnnual').textContent = displayMode==='nominal' ? 'Annual benefit (at claiming)' : "Annual benefit (today's $)";
+    document.getElementById('ssColLifetime').textContent = displayMode==='nominal' ? 'Lifetime after-tax income + legacy (actual future $)' : 'Lifetime after-tax income + legacy';
+
+    var gapYears = Math.max(0, results.ssClaimAge - inputs.retirementAge);
+    var gapEl = document.getElementById('gapWarning');
+    if (gapYears > 0){
+      document.getElementById('gapWarningText').textContent =
+        'You plan to retire at ' + inputs.retirementAge + ' but claim Social Security at ' + results.ssClaimAge + ' — ' +
+        'that\'s ' + gapYears + ' year' + (gapYears===1?'':'s') +
+        ' where your portfolio withdrawal has to cover your full income on its own before Social Security joins in.';
+      gapEl.classList.add('show');
+    } else {
+      gapEl.classList.remove('show');
+    }
+
+    renderMilestones(results, inputs);
+    renderChart(results, inputs);
+    renderSSCompare(results, inputs);
+    renderRetirementIncome(results, inputs);
+    renderTrust(results, inputs);
+    return results;
+  }
+
+  document.getElementById('calcForm').addEventListener('input', function(){ render(); });
+  document.getElementById('calcForm').addEventListener('change', function(){ render(); });
+
+  function setDisplayMode(mode){
+    displayMode = mode;
+    document.getElementById('modeNominalBtn').classList.toggle('active', mode==='nominal');
+    document.getElementById('modeTodayBtn').classList.toggle('active', mode==='today');
+    render();
+  }
+  document.getElementById('modeNominalBtn').addEventListener('click', function(){ setDisplayMode('nominal'); });
+  document.getElementById('modeTodayBtn').addEventListener('click', function(){ setDisplayMode('today'); });
+
+  // ================= PDF export =================
+  var downloadsCap = null;
+  function initDownloads(){
+    if (window.claude && window.claude.use){
+      window.claude.use('downloads').then(function(ns){ downloadsCap = ns; }).catch(function(){ downloadsCap = null; });
+    }
+  }
+  initDownloads();
+
+  function buildPdf(results, inputs){
+    var jsPDF = window.jspdf.jsPDF;
+    var doc = new jsPDF({unit:'pt', format:'letter'});
+    var pageW = doc.internal.pageSize.getWidth();
+    var margin = 54, y = margin;
+    var lineH = 15;
+
+    function h(text, size){ doc.setFont('helvetica','bold'); doc.setFontSize(size||14); doc.setTextColor(20,33,61); doc.text(text, margin, y); y+=size?size*1.1:18; }
+    function p(text, size){
+      doc.setFont('helvetica','normal'); doc.setFontSize(size||10); doc.setTextColor(60,70,90);
+      var lines = doc.splitTextToSize(text, pageW-margin*2);
+      doc.text(lines, margin, y);
+      y += lines.length*lineH*0.72 + 6;
+    }
+    function kv(k,v){
+      doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(60,70,90);
+      doc.text(k, margin, y);
+      doc.setFont('helvetica','bold'); doc.setTextColor(20,33,61);
+      doc.text(v, margin+260, y);
+      y += lineH;
+    }
+    function rule(){ doc.setDrawColor(217,219,210); doc.line(margin, y, pageW-margin, y); y += 14; }
+    function ensureSpace(needed){
+      if (y + needed > doc.internal.pageSize.getHeight()-margin){ doc.addPage(); y = margin; }
+    }
+
+    // Cover
+    doc.setFillColor(20,33,61);
+    doc.rect(0,0,pageW,90,'F');
+    doc.setTextColor(245,246,242);
+    doc.setFont('helvetica','bold'); doc.setFontSize(22);
+    doc.text('The Long Run', margin, 50);
+    doc.setFont('helvetica','normal'); doc.setFontSize(11);
+    doc.text('Retirement & Social Security projection report', margin, 70);
+    y = 120;
+    doc.setFontSize(9); doc.setTextColor(140,140,140);
+    var genLines = doc.splitTextToSize('Generated ' + new Date().toDateString() + ' — dollar figures below (aside from the balance-at-retirement box) use ' + basisLabel() + ', matching what\'s currently shown on screen.', pageW-margin*2);
+    doc.text(genLines, margin, y);
+    y += genLines.length*11 + 14;
+
+    h('Your scenario', 13);
+    kv('Current age / Retirement age', inputs.currentAge + ' / ' + inputs.retirementAge);
+    kv('Sex / Planning (death) age', (inputs.sex==='female'?'Female':'Male') + ' / ' + inputs.deathAge);
+    kv('Filing status', inputs.filingStatus === 'mfj' ? 'Married filing jointly' : 'Single');
+    kv('Current salary', fmtUSD(inputs.currentSalary));
+    kv('Salary growth (nominal)', inputs.salaryGrowthRate+'%/yr');
+    kv('Expected investment return', inputs.expectedReturn+'%/yr nominal');
+    kv('Assumed inflation', inputs.inflationRate+'%/yr');
+    kv('Traditional: balance / contribution', fmtUSD(inputs.traditionalBalance)+' / '+inputs.traditionalContribPct+'%');
+    kv('Roth: balance / contribution', fmtUSD(inputs.rothBalance)+' / '+inputs.rothContribPct+'%');
+    kv('Employer match', inputs.employerMatchRate+'% up to '+inputs.employerMatchCapPct+'% of salary (combined trad.+Roth)');
+    kv('Taxable: balance / contribution', fmtUSD(inputs.taxableBalance)+' / '+inputs.taxableContribPct+'%');
+    kv('ESOP: value / contribution', fmtUSD(inputs.esopBalance)+' / '+inputs.esopContribPct+'%/yr');
+    kv('ESOP: allocation decay / growth', inputs.esopDilutionRate+'%/yr / '+inputs.esopGrowthRate+'%/yr');
+    kv('Social Security claiming age', String(results.ssClaimAge) + (ssClaimAgeTouched ? ' (your choice)' : ' (recommended)'));
+    kv('Trust annual spend rate', inputs.trustSpendRate+'%/yr');
+    y += 8; rule();
+
+    h('Projected balance at retirement (age '+inputs.retirementAge+')', 13);
+    kv('Nominal (future) dollars', fmtUSD(results.nominalBalance));
+    kv("Today's purchasing power", fmtUSD(results.realBalance));
+    kv('1996 purchasing power', fmtUSD(results.mndBalance));
+    y += 8; rule();
+
+    var pdfWithdrawal = displayMode==='nominal' ? nominalFromReal(results.grossWithdrawalReal, inputs.retirementAge, inputs) : results.grossWithdrawalReal;
+    var pdfSSAnnual = displayMode==='nominal' ? nominalFromReal(results.sim.ssAnnualReal, results.ssClaimAge, inputs) : results.sim.ssAnnualReal;
+    var pdfGross = displayMode==='nominal' ? nominalFromReal(results.firstYear.grossIncome, inputs.retirementAge, inputs) : results.firstYear.grossIncome;
+    var pdfAfterTax = displayMode==='nominal' ? nominalFromReal(results.firstYear.afterTaxTotal, inputs.retirementAge, inputs) : results.firstYear.afterTaxTotal;
+    h('Retirement income, first year ('+basisLabel()+')', 13);
+    kv('Portfolio withdrawal target ('+results.swr.toFixed(2)+'% rate)', fmtUSD(pdfWithdrawal)+'/yr');
+    kv('Social Security (claiming at '+results.ssClaimAge+')', fmtUSD(pdfSSAnnual)+'/yr');
+    kv('Combined, pre-tax', fmtUSD(pdfGross)+'/yr');
+    kv('Combined, after federal tax', fmtUSD(pdfAfterTax)+'/yr');
+    kv('Effective federal tax rate', ((results.firstYear.totalTax/results.firstYear.grossIncome)*100).toFixed(1)+'%');
+    kv('RMDs begin at age', String(results.ssBase.rmdStartAge));
+    var gapYearsPdf = Math.max(0, results.ssClaimAge - inputs.retirementAge);
+    if (gapYearsPdf > 0){
+      y += 4;
+      p('Note: you plan to retire at '+inputs.retirementAge+' but claim Social Security at '+results.ssClaimAge+', so '+gapYearsPdf+' year(s) are funded by the portfolio alone before Social Security begins.', 9);
+    }
+
+    // Social Security claiming-age recommendation
+    doc.addPage(); y = margin;
+    h('Social Security claiming-age recommendation', 14);
+    p('Every claiming age from 62 to 70 was simulated across your full retirement; the score is total lifetime after-tax income plus what\'s left at death. See methodology for details.', 9);
+    y += 4;
+    var ssCols = ['Claim age','Annual benefit','Lifetime income + legacy ('+basisLabel()+')'];
+    var ssColX = [margin, margin+150, margin+320];
+    doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(20,33,61);
+    ssCols.forEach(function(c,i){ doc.text(c, ssColX[i], y); });
+    y += 12; rule();
+    doc.setFontSize(9);
+    results.recommendation.results.forEach(function(r){
+      ensureSpace(16);
+      var isRec = r.claimAge === results.recommendation.best;
+      var isChosen = r.claimAge === results.ssClaimAge;
+      var annualDisplay = displayMode==='nominal' ? nominalFromReal(r.ssAnnualReal, r.claimAge, inputs) : r.ssAnnualReal;
+      var objectiveDisplay = displayMode==='nominal' ? nominalLifetimeResourceObjective(r.sim, inputs.currentAge, inputs.inflationRate) : r.objective;
+      doc.setFont('helvetica', isChosen ? 'bold' : 'normal');
+      doc.setTextColor(isChosen?31:60, isChosen?138:70, isChosen?95:90);
+      var label = r.claimAge + (isRec ? '  (recommended)' : '') + (isChosen && !isRec ? '  (your choice)' : '');
+      doc.text(label, ssColX[0], y);
+      doc.text(fmtUSD(annualDisplay)+'/yr', ssColX[1], y);
+      doc.text(fmtUSD(objectiveDisplay), ssColX[2], y);
+      y += 15;
+    });
+    y += 6; rule();
+
+    // Chart image
+    ensureSpace(260);
+    y += 6;
+    h('Balance growth by account (accumulation)', 13);
+    var canvas = document.getElementById('growthChart');
+    try {
+      var imgData = canvas.toDataURL('image/png', 1.0);
+      var imgW = pageW-margin*2, imgH = imgW*(canvas.height/canvas.width);
+      ensureSpace(imgH+10);
+      doc.addImage(imgData, 'PNG', margin, y, imgW, imgH);
+      y += imgH + 16;
+    } catch(e){ p('(Chart image unavailable)', 9); }
+
+    // Milestone table
+    doc.addPage(); y = margin;
+    h('Milestones (accumulation, '+basisLabel()+')', 14);
+    var cols = ['Age','Year','Salary','Traditional','Roth','Taxable','ESOP','Total'];
+    var colX = [margin, margin+28, margin+62, margin+118, margin+178, margin+233, margin+288, margin+345];
+    doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(20,33,61);
+    cols.forEach(function(c,i){ doc.text(c, colX[i], y); });
+    y += 10; rule();
+    var rows = results.proj.rows.filter(function(r){ return (r.age - inputs.currentAge)%5===0; });
+    if (rows[rows.length-1] !== results.proj.rows[results.proj.rows.length-1]) rows.push(results.proj.rows[results.proj.rows.length-1]);
+    doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(60,70,90);
+    var accConv = function(v, age){ return displayMode==='nominal' ? v : realFromNominal(v, age, inputs); };
+    rows.forEach(function(r){
+      ensureSpace(16);
+      var vals = [String(r.age), String(r.year), fmtCompact(accConv(r.salary,r.age)), fmtCompact(accConv(r.traditional,r.age)), fmtCompact(accConv(r.roth,r.age)), fmtCompact(accConv(r.taxable,r.age)), fmtCompact(accConv(r.esop,r.age)), fmtCompact(accConv(r.total,r.age))];
+      vals.forEach(function(v,i){ doc.text(v, colX[i], y); });
+      y += 14;
+    });
+
+    // Year-by-year retirement income
+    doc.addPage(); y = margin;
+    h('Year-by-year retirement income ('+basisLabel()+')', 14);
+    p('Every year from retirement through your planning age ('+inputs.deathAge+'). RMD-forced amounts beyond your target spending are reinvested after tax; see methodology.', 9);
+    y += 4;
+    var riCols = ['Age','Year','Soc. Sec.','Gross','Fed. tax','After-tax','Balance'];
+    var riColX = [margin, margin+32, margin+68, margin+140, margin+205, margin+270, margin+345];
+    doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(20,33,61);
+    riCols.forEach(function(c,i){ doc.text(c, riColX[i], y); });
+    y += 10; rule();
+    doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(60,70,90);
+    var decConv = function(v, age){ return displayMode==='nominal' ? nominalFromReal(v, age, inputs) : v; };
+    results.sim.rows.forEach(function(r){
+      ensureSpace(14);
+      var vals = [String(r.age), String(r.year), fmtCompact(decConv(r.ssIncome,r.age)), fmtCompact(decConv(r.grossIncome,r.age)), fmtCompact(decConv(r.totalTax,r.age)), fmtCompact(decConv(r.afterTaxTotal,r.age)), fmtCompact(decConv(r.balTotal,r.age))];
+      vals.forEach(function(v,i){ doc.text(v, riColX[i], y); });
+      y += 13;
+    });
+
+    // Legacy & trust
+    doc.addPage(); y = margin;
+    h('Legacy & trust (100 years after death, '+basisLabel()+')', 14);
+    var trustConv = function(v, yearsAfterDeath){ return displayMode==='nominal' ? nominalFromReal(v, inputs.deathAge+yearsAfterDeath, inputs) : v; };
+    kv('Balance at death, age '+inputs.deathAge, fmtUSD(results.trust.length ? trustConv(results.trust[0].balance, 0) : 0));
+    y += 4;
+    var trCols = ['Years after death','Trust balance','Annual distribution'];
+    var trColX = [margin, margin+150, margin+320];
+    doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(20,33,61);
+    trCols.forEach(function(c,i){ doc.text(c, trColX[i], y); });
+    y += 12; rule();
+    doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(60,70,90);
+    results.trust.forEach(function(r){
+      ensureSpace(16);
+      doc.text(String(r.yearsAfterDeath), trColX[0], y);
+      doc.text(fmtUSD(trustConv(r.balance, r.yearsAfterDeath)), trColX[1], y);
+      doc.text(fmtUSD(trustConv(r.distribution, r.yearsAfterDeath)), trColX[2], y);
+      y += 15;
+    });
+
+    // Methodology
+    doc.addPage(); y = margin;
+    h('Methodology & assumptions', 14);
+    p('4% rule adjustment: this tool uses withdrawal rate = 4.0% + 0.10% for every year of retirement age above 65 (floored at 2.5%, capped at 6.0%) as a transparent heuristic, not an official formula. Actual safe withdrawal rates depend on market conditions at retirement, portfolio mix, and desired legacy.');
+    p('Planning age: defaults to your current age plus your remaining life expectancy from the SSA Period Life Table, interpolated for your current age and sex. That\'s a median, so about half of people live longer — raise it to plan more conservatively.');
+    p('Required Minimum Distributions: begin at age 75 (born 1960+) or 73 (born earlier) under SECURE 2.0, applied to Traditional and ESOP balances using the IRS Uniform Lifetime Table. If the RMD exceeds your target spending, the excess is withdrawn, taxed, and the after-tax remainder is reinvested in your taxable account. Roth accounts have no RMDs.');
+    p('Social Security: uses the real 2026 SSA bend-point formula (90%/32%/15% of AIME at $1,226 and $7,391), but a simplified proxy earnings history built from your current salary projected across your career using real (above-inflation) salary growth, capped at the 2026 taxable maximum of $184,500, using your top 35 years. Early/delayed claiming adjustments use the actual SSA percentages. This will differ from your real SSA statement, which uses your actual earnings record.');
+    p('Social Security claiming-age recommendation: every age 62-70 is simulated across your full retirement and scored by total lifetime after-tax income plus unspent legacy at death (reinvested RMD dollars are not double-counted). It is a mathematical optimization only, and does not know your health, other income, marital/survivor coordination, or preference for certainty.');
+    p('ESOP: employer-funded (not a payroll deferral), allocated roughly by compensation, and taxed as ordinary income on distribution like a 401(k). It grows at your own assumed company-stock rate, not the S&P 500, and its contribution rate as % of pay decays by your chosen "allocation decay" rate each year, reflecting how ESOP allocations often shrink over time as headcount grows faster than the share pool. That decay rate is a disclosed, unsourced heuristic (default 3%/yr) — adjust it if you know your company\'s actual trend. Vesting and single-company concentration risk are not modeled.');
+    p('Taxes: federal only, no state/local taxes. Computed in today\'s dollars using 2026 brackets and standard deduction. Traditional and ESOP withdrawals taxed as ordinary income; Roth withdrawals tax-free; taxable-brokerage withdrawals taxed on their embedded gain at long-term capital gains rates. Social Security taxability uses the IRS combined-income test. Withdrawals are drawn proportionally across account types (subject to RMDs), a simplification — real tax-efficient sequencing could improve on this.');
+    p('Dollar comparisons: "Nominal" = actual future dollars with no inflation adjustment. "Today\'s purchasing power" deflates using your assumed inflation rate. "1996 purchasing power" additionally applies actual historical U.S. CPI-U inflation from 1996 to 2026 (a cumulative factor of about 2.13x), referencing the year The Millionaire Next Door was published and popularized "millionaire" as a benchmark.');
+    p('Nominal vs. today\'s-dollars toggle: aside from the three balance-at-retirement figures (which always show all three bases), every dollar figure in this report uses the basis selected on screen at the time it was generated. In nominal mode, retirement-year figures (which are computed natively in real terms) are inflated back up to the actual dollar amount that would appear in that future calendar year; in today\'s-dollars mode, accumulation-phase figures (computed natively in nominal terms) are deflated to current purchasing power. The lifetime Social Security comparison total, in nominal mode, is the sum of each year\'s actual future dollars received -- a legitimate but unusual figure, since it adds together dollars from many different future years.');
+    p('Legacy & trust: whatever remains at your planning age seeds a trust that distributes a fixed percentage of its balance annually and grows at your real (inflation-adjusted) market return. It does not model trust/estate taxes, trustee fees, cost-basis step-up, or your ESOP\'s company-specific return. A 100-year projection at constant rates is illustrative of compounding vs. spending, not a forecast to rely on.');
+    p('Not included: healthcare and long-term-care costs, pensions, home equity, other debts or assets, market volatility (a constant annual return is assumed rather than real year-to-year sequence risk), and state or local taxes.');
+    y += 6; rule();
+    doc.setFont('helvetica','italic'); doc.setFontSize(9); doc.setTextColor(110,110,110);
+    var disc = doc.splitTextToSize('This report is an educational planning illustration, not personalized financial, tax, legal, or Social Security advice. Figures are estimates based on the assumptions you entered and current (2026) public tax and Social Security rules, which are subject to change. Consult a fee-only fiduciary financial advisor and a tax professional before making retirement decisions.', pageW-margin*2);
+    doc.text(disc, margin, y);
+
+    return doc;
+  }
+
+  function setStatus(msg){ document.getElementById('pdfStatus').textContent = msg || ''; }
+
+  document.getElementById('downloadPdfBtn').addEventListener('click', function(){
+    var results = window.__lastResults, inputs = window.__lastInputs;
+    if (!results){ results = render(); inputs = window.__lastInputs; }
+    if (!results){ setStatus('Please fix the highlighted field first.'); return; }
+
+    setStatus('Building your PDF…');
+    var doc;
+    try { doc = buildPdf(results, inputs); }
+    catch(e){ setStatus('Could not build the PDF.'); return; }
+    var blob = doc.output('blob');
+
+    // Plain browser download via a temporary <a download> + object URL. This is inert inside
+    // the Artifact sandbox (hence the downloads capability above), but works normally when this
+    // file is opened directly -- as a local file, or hosted on any ordinary page -- so it's the
+    // fallback whenever the Artifact capability isn't available.
+    function browserDownload(){
+      try {
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url; a.download = 'the-long-run-retirement-report.pdf';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+        setStatus('Saved.');
+      } catch(e){ setStatus('Could not start the download.'); }
+    }
+
+    function trySave(ns){
+      if (!ns){ browserDownload(); return; }
+      ns.save({filename:'the-long-run-retirement-report.pdf', data: blob}).then(function(res){
+        setStatus(res.status === 'saved' ? 'Saved.' : 'Delivered.');
+      }).catch(function(err){
+        var code = err && err.code;
+        if (code === 'declined') setStatus('Download cancelled.');
+        else if (code === 'rate_limited') setStatus('Please try again in a moment.');
+        else if (code === 'unavailable' || code === 'not_granted' || code === 'capability_disabled' || code === 'capability_removed'){ browserDownload(); }
+        else setStatus('Download unavailable right now.');
+      });
+    }
+
+    if (downloadsCap){ trySave(downloadsCap); }
+    else if (window.claude && window.claude.use){
+      window.claude.use('downloads').then(function(ns){ downloadsCap = ns; trySave(ns); }).catch(function(){ trySave(null); });
+    } else {
+      trySave(null);
+    }
+  });
+
+  // ================= Init =================
+  render();
+})();
+</script>
+
+</body>
+</html>
