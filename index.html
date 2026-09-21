@@ -213,6 +213,7 @@
 </head>
 <body>
 
+
 <div class="wrap">
   <header class="top">
     <div class="eyebrow">Retirement &amp; Social Security Projection</div>
@@ -411,6 +412,37 @@
         </fieldset>
 
         <fieldset>
+          <legend>HSA &amp; healthcare costs</legend>
+          <p class="grp-note">A Health Savings Account is triple-tax-advantaged: pre-tax in, tax-free growth, tax-free out for qualified medical expenses. In retirement, this tool pays your healthcare cost from your HSA first; if the HSA can't cover it, the gap is drawn from your other accounts and shown separately in the year-by-year income table.</p>
+          <div class="two-col">
+            <div class="field">
+              <label for="hsaBalance">Current HSA value</label>
+              <input type="number" id="hsaBalance" min="0" step="500" value="0">
+            </div>
+            <div class="field">
+              <label for="hsaContribPct">You + employer contribute</label>
+              <input type="number" id="hsaContribPct" min="0" max="100" step="0.5" value="0">
+              <div class="unit">% of salary/yr &mdash; capped at the IRS annual limit</div>
+            </div>
+          </div>
+          <div class="two-col">
+            <div class="field">
+              <label for="hsaCoverage">HSA coverage</label>
+              <select id="hsaCoverage">
+                <option value="self" selected>Self-only</option>
+                <option value="family">Family</option>
+              </select>
+              <div class="unit">sets your IRS contribution limit</div>
+            </div>
+            <div class="field">
+              <label for="healthcareAnnualCost">Average yearly healthcare cost</label>
+              <input type="number" id="healthcareAnnualCost" min="0" step="100" value="7300">
+              <div class="unit">today's $, per person at age 65 &mdash; prefilled, edit if you have a better estimate</div>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
           <legend>Market &amp; inflation assumptions</legend>
           <div class="two-col">
             <div class="field">
@@ -423,6 +455,11 @@
               <input type="number" id="inflationRate" min="0" max="10" step="0.1" value="3">
               <div class="unit">% per year</div>
             </div>
+          </div>
+          <div class="field">
+            <label for="stateTaxRate">State income tax rate</label>
+            <input type="number" id="stateTaxRate" min="0" max="15" step="0.05" value="4.45">
+            <div class="unit">% flat rate &mdash; prefilled at Utah's rate; enter 0 or your own if that doesn't apply to you</div>
           </div>
         </fieldset>
 
@@ -438,12 +475,175 @@
         </fieldset>
 
         <fieldset>
+          <legend>Withdrawal strategy</legend>
+          <p class="grp-note">How retirement withdrawals are split across your Traditional, Roth, Taxable, and ESOP accounts each year, once Social Security and any rental income are factored in.</p>
+          <div class="field">
+            <label for="withdrawalStrategy">Withdrawal order</label>
+            <select id="withdrawalStrategy">
+              <option value="proportional" selected>Proportional (pulls from every account at once, by its share of your balance)</option>
+              <option value="tax-optimized">Tax-optimized (taxable first, then Traditional + ESOP, Roth last)</option>
+            </select>
+          </div>
+        </fieldset>
+
+        <fieldset>
           <legend>Trust &amp; legacy</legend>
           <p class="grp-note">Whatever's left in your accounts at death is modeled as passing into a trust. This estimates how long it could last and what it could pay out, assuming the trustees spend a fixed percentage of the balance each year and the rest stays invested.</p>
           <div class="field">
             <label for="trustSpendRate">Trust annual spend rate</label>
             <input type="number" id="trustSpendRate" min="0" max="20" step="0.25" value="4">
             <div class="unit">% of trust balance distributed each year</div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Rental real estate &mdash; apartments</legend>
+          <p class="grp-note">Enter totals across all units in this category. Assumes any mortgage payment is already included in expenses &mdash; this tool doesn't model the cash-flow increase when a mortgage is paid off partway through the projection. Net cash flow (rent minus expenses) is added to your retirement income; value, mortgage, equity, and remaining term are recorded for context but don't otherwise drive the projection.</p>
+          <div class="two-col">
+            <div class="field">
+              <label for="reAptUnits"># of units</label>
+              <input type="number" id="reAptUnits" min="0" step="1" value="0">
+            </div>
+            <div class="field">
+              <label for="reAptAvgSize">Average size</label>
+              <input type="number" id="reAptAvgSize" min="0" step="10" value="0">
+              <div class="unit">sq ft per unit</div>
+            </div>
+          </div>
+          <div class="two-col">
+            <div class="field">
+              <label for="reAptValue">Current value</label>
+              <input type="number" id="reAptValue" min="0" step="1000" value="0">
+              <div class="unit">total, all units</div>
+            </div>
+            <div class="field">
+              <label for="reAptRent">Current rent</label>
+              <input type="number" id="reAptRent" min="0" step="50" value="0">
+              <div class="unit">$/month, total all units</div>
+            </div>
+          </div>
+          <div class="two-col">
+            <div class="field">
+              <label for="reAptExpenses">Current expenses</label>
+              <input type="number" id="reAptExpenses" min="0" step="50" value="0">
+              <div class="unit">$/month, total &mdash; incl. mortgage payment</div>
+            </div>
+            <div class="field">
+              <label for="reAptMortgage">Current mortgage</label>
+              <input type="number" id="reAptMortgage" min="0" step="1000" value="0">
+              <div class="unit">balance, total all units</div>
+            </div>
+          </div>
+          <div class="two-col">
+            <div class="field">
+              <label for="reAptEquity">Current equity</label>
+              <input type="number" id="reAptEquity" min="0" step="1000" value="0">
+            </div>
+            <div class="field">
+              <label for="reAptRemainingTerm">Remaining mortgage term</label>
+              <input type="number" id="reAptRemainingTerm" min="0" max="40" step="1" value="0">
+              <div class="unit">years</div>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Rental real estate &mdash; townhouses / condos</legend>
+          <div class="two-col">
+            <div class="field">
+              <label for="reCondoUnits"># of units</label>
+              <input type="number" id="reCondoUnits" min="0" step="1" value="0">
+            </div>
+            <div class="field">
+              <label for="reCondoAvgSize">Average size</label>
+              <input type="number" id="reCondoAvgSize" min="0" step="10" value="0">
+              <div class="unit">sq ft per unit</div>
+            </div>
+          </div>
+          <div class="two-col">
+            <div class="field">
+              <label for="reCondoValue">Current value</label>
+              <input type="number" id="reCondoValue" min="0" step="1000" value="0">
+              <div class="unit">total, all units</div>
+            </div>
+            <div class="field">
+              <label for="reCondoRent">Current rent</label>
+              <input type="number" id="reCondoRent" min="0" step="50" value="0">
+              <div class="unit">$/month, total all units</div>
+            </div>
+          </div>
+          <div class="two-col">
+            <div class="field">
+              <label for="reCondoExpenses">Current expenses</label>
+              <input type="number" id="reCondoExpenses" min="0" step="50" value="0">
+              <div class="unit">$/month, total &mdash; incl. mortgage payment</div>
+            </div>
+            <div class="field">
+              <label for="reCondoMortgage">Current mortgage</label>
+              <input type="number" id="reCondoMortgage" min="0" step="1000" value="0">
+              <div class="unit">balance, total all units</div>
+            </div>
+          </div>
+          <div class="two-col">
+            <div class="field">
+              <label for="reCondoEquity">Current equity</label>
+              <input type="number" id="reCondoEquity" min="0" step="1000" value="0">
+            </div>
+            <div class="field">
+              <label for="reCondoRemainingTerm">Remaining mortgage term</label>
+              <input type="number" id="reCondoRemainingTerm" min="0" max="40" step="1" value="0">
+              <div class="unit">years</div>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Rental real estate &mdash; single-family homes</legend>
+          <div class="two-col">
+            <div class="field">
+              <label for="reSfhUnits"># of units</label>
+              <input type="number" id="reSfhUnits" min="0" step="1" value="0">
+            </div>
+            <div class="field">
+              <label for="reSfhAvgSize">Average size</label>
+              <input type="number" id="reSfhAvgSize" min="0" step="10" value="0">
+              <div class="unit">sq ft per unit</div>
+            </div>
+          </div>
+          <div class="two-col">
+            <div class="field">
+              <label for="reSfhValue">Current value</label>
+              <input type="number" id="reSfhValue" min="0" step="1000" value="0">
+              <div class="unit">total, all units</div>
+            </div>
+            <div class="field">
+              <label for="reSfhRent">Current rent</label>
+              <input type="number" id="reSfhRent" min="0" step="50" value="0">
+              <div class="unit">$/month, total all units</div>
+            </div>
+          </div>
+          <div class="two-col">
+            <div class="field">
+              <label for="reSfhExpenses">Current expenses</label>
+              <input type="number" id="reSfhExpenses" min="0" step="50" value="0">
+              <div class="unit">$/month, total &mdash; incl. mortgage payment</div>
+            </div>
+            <div class="field">
+              <label for="reSfhMortgage">Current mortgage</label>
+              <input type="number" id="reSfhMortgage" min="0" step="1000" value="0">
+              <div class="unit">balance, total all units</div>
+            </div>
+          </div>
+          <div class="two-col">
+            <div class="field">
+              <label for="reSfhEquity">Current equity</label>
+              <input type="number" id="reSfhEquity" min="0" step="1000" value="0">
+            </div>
+            <div class="field">
+              <label for="reSfhRemainingTerm">Remaining mortgage term</label>
+              <input type="number" id="reSfhRemainingTerm" min="0" max="40" step="1" value="0">
+              <div class="unit">years</div>
+            </div>
           </div>
         </fieldset>
 
@@ -479,14 +679,29 @@
             <div class="d">Claiming at age <span id="ssClaimAgeDisplay">65</span> &middot; <span id="ssBasisNote">today's dollars</span></div>
           </div>
           <div class="income-card">
+            <div class="k">Rental income</div>
+            <div class="v" id="rentalIncome">&mdash;</div>
+            <div class="d">Net cash flow, all rental properties &middot; not run through the tax engine (see methodology)</div>
+          </div>
+          <div class="income-card">
+            <div class="k">Healthcare cost</div>
+            <div class="v" id="healthcareCostCard">&mdash;</div>
+            <div class="d" id="healthcareCostNote">&mdash;</div>
+          </div>
+          <div class="income-card">
             <div class="k">Combined, pre-tax</div>
             <div class="v" id="grossIncome">&mdash;</div>
-            <div class="d">Withdrawal + Social Security, before federal tax</div>
+            <div class="d">Withdrawal + Social Security + rental, before tax</div>
           </div>
           <div class="income-card accent">
-            <div class="k">Combined, after federal tax</div>
+            <div class="k">Combined, after tax</div>
             <div class="v" id="afterTaxIncome">&mdash;</div>
-            <div class="d">Effective federal rate: <span id="effTaxRate">&mdash;</span></div>
+            <div class="d">Effective tax rate (fed+state): <span id="effTaxRate">&mdash;</span></div>
+          </div>
+          <div class="income-card accent">
+            <div class="k">Spendable, after healthcare</div>
+            <div class="v" id="spendableIncome">&mdash;</div>
+            <div class="d">After tax, minus any healthcare shortfall and reinvested RMD excess</div>
           </div>
         </div>
         <div class="gap-warning" id="gapWarning" style="margin-top:12px;">
@@ -502,6 +717,7 @@
           <span><span class="swatch" style="background:var(--chart-roth)"></span>Roth</span>
           <span><span class="swatch" style="background:var(--chart-taxable)"></span>Taxable brokerage</span>
           <span><span class="swatch" style="background:var(--chart-stock)"></span>ESOP</span>
+          <span><span class="swatch" style="background:var(--forest)"></span>HSA</span>
         </div>
         <p class="grp-note" style="margin-top:10px;">Shown from today through retirement (the accumulation phase), in <span id="chartBasisNote">nominal (future) dollars</span>. See &ldquo;Year-by-year retirement income&rdquo; below for what happens after you stop working.</p>
       </div>
@@ -512,7 +728,7 @@
         <div class="table-scroll">
           <table>
             <thead>
-              <tr><th>Age</th><th>Year</th><th>Salary</th><th>Traditional</th><th>Roth</th><th>Taxable</th><th>ESOP</th><th>Total</th></tr>
+              <tr><th>Age</th><th>Year</th><th>Salary</th><th>Traditional</th><th>Roth</th><th>Taxable</th><th>ESOP</th><th>HSA</th><th>Total</th></tr>
             </thead>
             <tbody id="milestoneBody"></tbody>
           </table>
@@ -550,7 +766,7 @@
         <div class="table-scroll">
           <table>
             <thead>
-              <tr><th>Age</th><th>Year</th><th>Social Security</th><th>Traditional</th><th>Roth</th><th>Taxable</th><th>ESOP</th><th>RMD (forced)</th><th>Gross income</th><th>Federal tax</th><th>After-tax income</th><th>Ending balance</th></tr>
+              <tr><th>Age</th><th>Year</th><th>Social Security</th><th>Rental income</th><th>Traditional</th><th>Roth</th><th>Taxable</th><th>ESOP</th><th>RMD (forced)</th><th>Healthcare (HSA)</th><th>Healthcare (shortfall)</th><th>Gross income</th><th>Federal tax</th><th>State tax</th><th>After-tax income</th><th>Spendable income</th><th>Ending balance</th></tr>
             </thead>
             <tbody id="retirementIncomeBody"></tbody>
           </table>
@@ -595,8 +811,31 @@
         <details>
           <summary>How taxes are estimated</summary>
           <div class="details-body">
-            <p>The income figures use 2026 federal tax law only (no state or local taxes) and are computed in today's dollars using today's brackets and standard deduction &mdash; a reasonable simplification since both are adjusted for inflation annually and roughly move together over time. Traditional-account and ESOP withdrawals are taxed as ordinary income; Roth withdrawals are entirely tax-free; taxable-brokerage withdrawals are taxed only on their embedded gain (tracked from your contributions vs. growth), at long-term capital-gains rates, stacked on top of your ordinary income. The taxable share of your Social Security benefit is estimated using the IRS's combined-income test (50%/85% thresholds).</p>
-            <p>In retirement, this tool draws down your four account types proportionally to their share of your balance each year &mdash; a simplification for illustration, and the basis for the year-by-year table below. Once you reach the age Required Minimum Distributions kick in, if the RMD on your Traditional or ESOP balance exceeds what proportional drawdown would have taken, the tool forces the larger RMD amount out (as the IRS requires) and reinvests anything beyond your target spending, after tax, into your taxable account. In practice, a tax-efficient withdrawal order (often taxable, then traditional and ESOP, then Roth last) can meaningfully reduce lifetime taxes; a financial advisor or tax professional can help sequence this properly.</p>
+            <p>The income figures use 2026 federal tax law and are computed in today's dollars using today's brackets and standard deduction &mdash; a reasonable simplification since both are adjusted for inflation annually and roughly move together over time. Traditional-account and ESOP withdrawals are taxed as ordinary income; Roth withdrawals are entirely tax-free; taxable-brokerage withdrawals are taxed only on their embedded gain (tracked from your contributions vs. growth), at long-term capital-gains rates, stacked on top of your ordinary income. The taxable share of your Social Security benefit is estimated using the IRS's combined-income test (50%/85% thresholds).</p>
+            <p>State tax is added on top of federal as a single flat rate (the &ldquo;State income tax rate&rdquo; field, prefilled at Utah's current 4.45% flat rate &mdash; Tax Foundation, effective 1/1/2026) applied to both your ordinary taxable income and your taxable capital gain, since Utah has no preferential capital-gains rate. If you live somewhere else, set your own flat-rate approximation or 0; this tool doesn't model progressive state brackets or state-specific deductions and credits (Utah's own Taxpayer Tax Credit, for instance, isn't modeled), so treat the state figure as directional rather than exact. Rental income (see below) is not run through this tax engine at all, and HSA withdrawals for healthcare are tax-free by law and also don't touch it.</p>
+            <p>In retirement, this tool draws down your accounts according to the &ldquo;Withdrawal strategy&rdquo; you choose (see below) &mdash; the default is proportional, matching earlier versions of this tool, but a tax-optimized order is also available. Once you reach the age Required Minimum Distributions kick in, if the RMD on your Traditional or ESOP balance exceeds what your chosen strategy would have taken, the tool forces the larger RMD amount out (as the IRS requires) and reinvests anything beyond your target spending, after tax, into your taxable account.</p>
+          </div>
+        </details>
+        <details>
+          <summary>How the withdrawal strategy toggle works</summary>
+          <div class="details-body">
+            <p><strong>Proportional</strong> pulls from your Traditional, Roth, Taxable, and ESOP accounts all at once, each in proportion to its share of your total balance that year. It's simple, but not tax-efficient: it triggers ordinary income tax and burns through tax-free Roth growth every single year, whether or not that's actually the cheapest way to fund your spending.</p>
+            <p><strong>Tax-optimized</strong> instead fills your spending need in a conventional order: your Taxable brokerage first (only the embedded gain is taxed, and it preserves your tax-deferred and tax-free accounts' growth longest), then Traditional and ESOP together (both ordinary income, split pro-rata between the two since taxes treat them identically), and Roth only last, once everything else is exhausted &mdash; because Roth has no RMDs and grows tax-free indefinitely, it's generally the best bucket to leave alone as long as possible. Required Minimum Distributions are still forced on top of either strategy once you reach RMD age, since the IRS doesn't care which strategy you picked.</p>
+            <p>This is a simplification of real tax-bracket management (which often fills ordinary income up to the top of a target bracket every year, blending in some Roth or Traditional withdrawals earlier than strict bucket order would, to smooth your marginal rate over your whole retirement rather than deferring everything). Bucket-order sequencing is still a legitimate, commonly recommended approach and a reasonable default; a fee-only financial advisor or tax professional can help fine-tune the actual sequence for your situation, especially around IRMAA thresholds and Roth conversion opportunities this tool doesn't model.</p>
+          </div>
+        </details>
+        <details>
+          <summary>How HSA and healthcare costs are modeled</summary>
+          <div class="details-body">
+            <p>A Health Savings Account is triple-tax-advantaged: contributions go in pre-tax (or reduce taxable income if made outside payroll), grow tax-deferred, and come out completely tax-free for qualified medical expenses at any age. Contributions during your working years are capped at the IRS self-only or family limit (2026: $4,400 / $8,750) plus a $1,000 catch-up from age 55 on, with the cap itself grown by your assumed inflation rate each year to mirror how the IRS actually indexes it. This tool does not model non-qualified HSA withdrawals (taxable, plus a 20% penalty before 65) or the tax treatment of an HSA inherited by a non-spouse (which loses its tax-advantaged status) &mdash; any balance left at death is simply carried into the legacy/trust figure along with your other accounts.</p>
+            <p>The &ldquo;Average yearly healthcare cost&rdquo; field is prefilled at $7,300/year, today's dollars, per person at age 65 &mdash; derived from the Milliman 2026 Retiree Health Cost Index's projected lifetime Original Medicare + Medigap Plan G + Part D costs, back-solved to an equivalent first-year figure under Milliman's own 4.8% medical-trend assumption. Milliman's data shows this starting annual figure is very similar for men and women; the much larger difference in women's <em>lifetime</em> costs is mostly a function of living longer (already captured by this tool's sex-specific life-expectancy default), not a materially higher annual rate, so one figure is used for both rather than fabricating a bigger gender gap than the underlying data supports. The field is fully editable if you have a better estimate.</p>
+            <p>In retirement, this cost grows from the age-65 baseline at Milliman's 4.8% nominal medical trend (a rate distinct from, and higher than, your general inflation assumption, reflecting the well-documented fact that healthcare costs tend to outpace inflation). Each year, the cost is paid from your HSA balance first; any amount your HSA can't cover is a shortfall funded by your other retirement income and shown as its own negative line in the year-by-year table &mdash; it still draws down your accounts and still generates tax on the extra withdrawal (since HSA money is the only genuinely tax-free piece here), which is why it's netted out of &ldquo;Spendable&rdquo; income separately from ordinary living expenses. Costs before age 65 (i.e., if you retire early, before Medicare eligibility) are likely <strong>understated</strong> by this model &mdash; private/ACA marketplace coverage before Medicare typically costs meaningfully more than this Medicare-anchored figure, so if you're planning an early retirement, consider raising the healthcare cost field to reflect that gap.</p>
+          </div>
+        </details>
+        <details>
+          <summary>How rental real estate income is modeled</summary>
+          <div class="details-body">
+            <p>Three categories &mdash; apartments, townhouses/condos, and single-family homes &mdash; since they tend to have different rent, expense, and financing profiles. Enter monthly rent and monthly expenses as totals across all units in a category (not per-unit); net cash flow is simply rent minus expenses, added to your retirement income every year as its own line, on top of your portfolio withdrawal and Social Security. Unit count, average size, current value, current mortgage balance, current equity, and remaining mortgage term are recorded for your own reference and shown in this report, but &mdash; aside from expenses, which are assumed to already include your mortgage payment &mdash; they don't otherwise drive the projection: this tool does not model property appreciation, the cash-flow increase when a mortgage is eventually paid off, depreciation or depreciation recapture, rental property taxation (rental profit is often substantially sheltered by depreciation in practice, so this tool treats net cash flow as already spendable rather than running it through the tax engine &mdash; consult a tax professional for your actual liability), or home equity as a balance-sheet asset. Net cash flow is held constant in today's (real) dollars for the whole projection, the same convention used for every other &ldquo;real&rdquo; figure in this tool.</p>
           </div>
         </details>
         <details>
@@ -640,7 +879,7 @@
         <details>
           <summary>How the post-death trust projection works</summary>
           <div class="details-body">
-            <p>Whatever remains across your four accounts at your planning age becomes the trust's starting balance, expressed in today's dollars. Each year, the trust distributes your chosen percentage of its current balance and the remainder grows at the same market return you set for your portfolio, adjusted for inflation (i.e. in real terms, matching how the rest of this tool reports money) &mdash; it does not separately model your ESOP's company-specific return, trust or estate taxes, trustee fees, or a step-up in cost basis at death. A fixed percentage-of-balance policy is a common, simple approach real trusts use (the distribution naturally shrinks if the balance shrinks and grows if it grows), but 100 years is an extremely long extrapolation: constant-return, constant-spend-rate projections that far out should be read as illustrating the mechanics of compounding versus spending, not as a forecast anyone should rely on. Real trusts face market volatility, changing tax law, trustee decisions, and family circumstances that no formula this simple can capture.</p>
+            <p>Whatever remains across your Traditional, Roth, Taxable, ESOP, and HSA accounts at your planning age becomes the trust's starting balance, expressed in today's dollars. Each year, the trust distributes your chosen percentage of its current balance and the remainder grows at the same market return you set for your portfolio, adjusted for inflation (i.e. in real terms, matching how the rest of this tool reports money) &mdash; it does not separately model your ESOP's company-specific return, trust or estate taxes, trustee fees, or a step-up in cost basis at death. A fixed percentage-of-balance policy is a common, simple approach real trusts use (the distribution naturally shrinks if the balance shrinks and grows if it grows), but 100 years is an extremely long extrapolation: constant-return, constant-spend-rate projections that far out should be read as illustrating the mechanics of compounding versus spending, not as a forecast anyone should rely on. Real trusts face market volatility, changing tax law, trustee decisions, and family circumstances that no formula this simple can capture.</p>
           </div>
         </details>
         <details>
@@ -682,7 +921,29 @@
       92:10.8,93:10.1,94:9.5,95:8.9,96:8.4,97:7.8,98:7.3,99:6.8,100:6.4},
     LE_AGES: [18,20,22,25,30,35,40,45,50,55,60,65,70,75,80,85,90],
     LE_MALE:   [58.56,56.69,54.83,52.06,47.50,43.02,38.59,34.21,29.90,25.73,21.79,18.12,14.66,11.42,8.50,6.04,4.11],
-    LE_FEMALE: [63.69,61.74,59.80,56.90,52.08,47.34,42.64,38.01,33.45,29.01,24.73,20.66,16.76,13.10,9.82,7.02,4.80]
+    LE_FEMALE: [63.69,61.74,59.80,56.90,52.08,47.34,42.64,38.01,33.45,29.01,24.73,20.66,16.76,13.10,9.82,7.02,4.80],
+    // State income tax: a flat rate applied on top of federal, matching Utah (this
+    // tool's default) -- flat on both ordinary income and capital gains (Utah has no
+    // preferential capital-gains rate). Sourced from the Tax Foundation, effective
+    // 1/1/2026. Editable in the UI for other states; no progressive state brackets
+    // or state-specific credits/deductions are modeled.
+    UTAH_FLAT_TAX_RATE: 4.45,
+    // 2026 IRS HSA contribution limits (self-only / family) and the 55+ catch-up,
+    // grown with inflation year over year to mirror how the IRS actually indexes them.
+    HSA_LIMIT_SELF: 4400,
+    HSA_LIMIT_FAMILY: 8750,
+    HSA_CATCHUP_55: 1000,
+    // Average annual retirement healthcare cost at age 65, today's dollars, per
+    // person -- derived from the Milliman 2026 Retiree Health Cost Index's lifetime
+    // cost figures, back-solved to an equivalent first-year cost under Milliman's own
+    // 4.8% medical trend. Milliman's data shows this starting annual figure is very
+    // similar for men and women (the higher female LIFETIME total is mostly a
+    // function of living longer, already reflected in this tool's sex-specific life
+    // expectancy default), so one figure is used for both sexes.
+    HEALTHCARE_BASE_ANNUAL_AGE65: 7300,
+    // Milliman's projected medical trend: nominal annual healthcare cost growth,
+    // distinct from (and higher than) general inflation.
+    HEALTHCARE_MEDICAL_TREND: 4.8
   };
 
   document.getElementById('curYearLabel').textContent = CONFIG.CURRENT_YEAR;
@@ -823,11 +1084,11 @@
     var r = inputs.expectedReturn/100;
     var esopR = inputs.esopGrowthRate/100;
     var salary = inputs.currentSalary;
-    var bal = {traditional:inputs.traditionalBalance, roth:inputs.rothBalance, taxable:inputs.taxableBalance, esop:inputs.esopBalance||0};
+    var bal = {traditional:inputs.traditionalBalance, roth:inputs.rothBalance, taxable:inputs.taxableBalance, esop:inputs.esopBalance||0, hsa:inputs.hsaBalance||0};
     var taxableBasis = inputs.taxableBalance;
     var rows = [{age:inputs.currentAge, year:CONFIG.CURRENT_YEAR, salary:salary,
-      traditional:bal.traditional, roth:bal.roth, taxable:bal.taxable, esop:bal.esop,
-      total:bal.traditional+bal.roth+bal.taxable+bal.esop}];
+      traditional:bal.traditional, roth:bal.roth, taxable:bal.taxable, esop:bal.esop, hsa:bal.hsa,
+      total:bal.traditional+bal.roth+bal.taxable+bal.esop+bal.hsa}];
 
     for (var i=0; i<years; i++){
       var age = inputs.currentAge+i;
@@ -862,18 +1123,47 @@
       var esopContribPct = esopBaseContribPct * Math.pow(1 - (inputs.esopDilutionRate||0)/100, i);
       var esopContrib = salary*esopContribPct/100;
 
+      // HSA: triple-tax-advantaged (pre-tax in, tax-free growth, tax-free out for
+      // qualified medical expenses). Capped at the IRS self-only/family limit plus the
+      // 55+ catch-up, with the cap itself grown with inflation to mirror how the IRS
+      // actually indexes it each year.
+      var hsaCapBase = (inputs.hsaCoverage==='family' ? CONFIG.HSA_LIMIT_FAMILY : CONFIG.HSA_LIMIT_SELF) + (age>=55 ? CONFIG.HSA_CATCHUP_55 : 0);
+      var hsaCap = hsaCapBase * Math.pow(1+inputs.inflationRate/100, i);
+      var hsaContrib = Math.min(salary*(inputs.hsaContribPct||0)/100, hsaCap);
+
       bal.traditional = (bal.traditional+employeeTraditional+employerMatch)*(1+r);
       bal.roth = (bal.roth+employeeRoth)*(1+r);
       bal.taxable = (bal.taxable+taxableContrib)*(1+r);
       bal.esop = (bal.esop+esopContrib)*(1+esopR);
+      bal.hsa = (bal.hsa+hsaContrib)*(1+r);
       taxableBasis += taxableContrib;
 
       salary *= (1+inputs.salaryGrowthRate/100);
       rows.push({age:age+1, year:CONFIG.CURRENT_YEAR+i+1, salary:salary,
-        traditional:bal.traditional, roth:bal.roth, taxable:bal.taxable, esop:bal.esop,
-        total:bal.traditional+bal.roth+bal.taxable+bal.esop});
+        traditional:bal.traditional, roth:bal.roth, taxable:bal.taxable, esop:bal.esop, hsa:bal.hsa,
+        total:bal.traditional+bal.roth+bal.taxable+bal.esop+bal.hsa});
     }
     return {rows:rows, finalBalances:bal, taxableBasis:taxableBasis, years:years};
+  }
+
+  // Rental real estate: three separate categories (apartments, townhouse/condo, single-
+  // family). Each category's monthly rent and monthly expenses are entered as totals
+  // across all units in that category (not per-unit), so cash flow is simply rent minus
+  // expenses -- unit count and average size are informational context, not part of the
+  // math. The mortgage payment is assumed to already be inside "expenses," so this tool
+  // does not attempt to model the cash-flow jump when a mortgage is paid off partway
+  // through the projection -- see methodology. Net cash flow is held constant in
+  // today's (real) dollars for the whole projection.
+  function realEstateAnnualCashFlow(inputs){
+    var prefixes = ['reApt','reCondo','reSfh'];
+    var total = 0;
+    for (var k=0; k<prefixes.length; k++){
+      var p = prefixes[k];
+      var rent = inputs[p+'Rent']||0;
+      var expenses = inputs[p+'Expenses']||0;
+      total += (rent-expenses)*12;
+    }
+    return total;
   }
 
   function proxyEarningsHistory(inputs){
@@ -911,18 +1201,57 @@
     return adjustPIAForClaimAge(ssBase.piaAtFRA, claimAge, ssBase.fraMonths) * 12;
   }
 
+  // Splits a spending need across Traditional/Roth/Taxable/ESOP under one of two
+  // strategies. "proportional" pulls from each bucket in proportion to its share of
+  // the total balance (simple, not tax-efficient). "tax-optimized" fills the need in a
+  // conventional tax-efficient order: Taxable first, then Traditional+ESOP together
+  // (both ordinary income, split pro-rata between the two), then Roth last (grows
+  // tax-free longest and has no RMDs). RMDs are applied as a hard floor afterward by
+  // the caller -- this only decides the pre-RMD "desired" split.
+  function splitWithdrawal(bal, need, strategy){
+    if (strategy === 'tax-optimized'){
+      var remaining = need;
+      var desiredTax = Math.min(bal.taxable, remaining); remaining -= desiredTax;
+      var ordinaryPool = bal.traditional+bal.esop;
+      var tradShareOfOrdinary = ordinaryPool > 0 ? bal.traditional/ordinaryPool : 0;
+      var ordinaryDraw = Math.min(ordinaryPool, remaining); remaining -= ordinaryDraw;
+      var desiredTrad = ordinaryDraw*tradShareOfOrdinary;
+      var desiredEsop = ordinaryDraw*(1-tradShareOfOrdinary);
+      var desiredRoth = Math.min(bal.roth, remaining);
+      return {desiredTrad:desiredTrad, desiredRoth:desiredRoth, desiredTax:desiredTax, desiredEsop:desiredEsop};
+    }
+    var totalBal = bal.traditional+bal.roth+bal.taxable+bal.esop;
+    var shareTrad = totalBal > 0 ? bal.traditional/totalBal : 0;
+    var shareRoth = totalBal > 0 ? bal.roth/totalBal : 0;
+    var shareTax = totalBal > 0 ? bal.taxable/totalBal : 0;
+    var shareEsop = totalBal > 0 ? bal.esop/totalBal : 0;
+    return {
+      desiredTrad: Math.min(bal.traditional, need*shareTrad),
+      desiredRoth: Math.min(bal.roth, need*shareRoth),
+      desiredTax: Math.min(bal.taxable, need*shareTax),
+      desiredEsop: Math.min(bal.esop, need*shareEsop)
+    };
+  }
+
   // ---- Decumulation: retirement age -> death age, year by year, real (today's) dollars ----
   function simulateRetirement(inputs, ssClaimAge, proj, ssBase){
     var yearsToRetirement = inputs.retirementAge - inputs.currentAge;
     var inflFactor = Math.pow(1+inputs.inflationRate/100, yearsToRetirement);
     var realReturn = (1+inputs.expectedReturn/100)/(1+inputs.inflationRate/100) - 1;
     var realEsopReturn = (1+inputs.esopGrowthRate/100)/(1+inputs.inflationRate/100) - 1;
+    // Medical costs are assumed to grow faster than general inflation (Milliman's
+    // 4.8% nominal medical trend vs. your own inflation assumption) -- this is the
+    // excess, real growth rate on top of general inflation, applied from age 65 (the
+    // anchor age the base cost figure is sourced at).
+    var realMedicalTrend = (1+CONFIG.HEALTHCARE_MEDICAL_TREND/100)/(1+inputs.inflationRate/100) - 1;
+    var rentalIncomeReal = realEstateAnnualCashFlow(inputs);
 
     var bal = {
       traditional: proj.finalBalances.traditional/inflFactor,
       roth: proj.finalBalances.roth/inflFactor,
       taxable: proj.finalBalances.taxable/inflFactor,
-      esop: proj.finalBalances.esop/inflFactor
+      esop: proj.finalBalances.esop/inflFactor,
+      hsa: (proj.finalBalances.hsa||0)/inflFactor
     };
     var totalAtRetirementReal = bal.traditional+bal.roth+bal.taxable+bal.esop;
     var swr = swrForAge(inputs.retirementAge);
@@ -934,19 +1263,22 @@
     var ssAnnualReal = ssAnnualForClaimAge(ssBase, ssClaimAge);
     var tt = taxTables(inputs.filingStatus);
     var rmdAge = ssBase.rmdStartAge;
+    var stateTaxRate = (inputs.stateTaxRate||0)/100;
+    var strategy = inputs.withdrawalStrategy === 'tax-optimized' ? 'tax-optimized' : 'proportional';
 
     var rows = [];
     for (var age=inputs.retirementAge; age<=inputs.deathAge; age++){
-      var totalBal = bal.traditional+bal.roth+bal.taxable+bal.esop;
-      var shareTrad = totalBal > 0 ? bal.traditional/totalBal : 0;
-      var shareRoth = totalBal > 0 ? bal.roth/totalBal : 0;
-      var shareTax = totalBal > 0 ? bal.taxable/totalBal : 0;
-      var shareEsop = totalBal > 0 ? bal.esop/totalBal : 0;
+      // Healthcare cost this year, in today's dollars: base figure (entered at age
+      // 65) compounded by the excess medical trend for every year above/below 65.
+      // Costs before 65 (pre-Medicare) are likely understated -- see methodology.
+      var healthcareCostReal = Math.max(0, (inputs.healthcareAnnualCost||0) * Math.pow(1+realMedicalTrend, age-65));
+      var hsaWithdrawal = Math.min(bal.hsa, healthcareCostReal);
+      var healthcareShortfall = healthcareCostReal - hsaWithdrawal;
 
-      var desiredTrad = Math.min(bal.traditional, targetSpendReal*shareTrad);
-      var desiredRoth = Math.min(bal.roth, targetSpendReal*shareRoth);
-      var desiredTax = Math.min(bal.taxable, targetSpendReal*shareTax);
-      var desiredEsop = Math.min(bal.esop, targetSpendReal*shareEsop);
+      var totalSpendNeed = targetSpendReal + healthcareShortfall;
+      var desired = splitWithdrawal(bal, totalSpendNeed, strategy);
+      var desiredTrad = desired.desiredTrad, desiredRoth = desired.desiredRoth,
+          desiredTax = desired.desiredTax, desiredEsop = desired.desiredEsop;
 
       var rmdTrad = 0, rmdEsop = 0;
       if (age >= rmdAge){
@@ -966,29 +1298,43 @@
       var ordinaryTaxableIncome = Math.max(0, ordinaryWithdrawal+taxableSSAmt-tt.stdDeduction);
       var ordinaryTax = progressiveTax(ordinaryTaxableIncome, tt.brackets);
       var capGainsTax = ltcgTax(ordinaryTaxableIncome, taxableGain, tt.ltcg);
-      var totalTax = ordinaryTax+capGainsTax;
+      // State tax: Utah (this tool's default) has no preferential capital-gains
+      // rate, so both the ordinary base and the taxable gain are taxed at the same
+      // flat rate. Simplification: reuses the federal post-standard-deduction base
+      // rather than modeling a separate state deduction/bracket structure.
+      var stateTax = stateTaxRate*(ordinaryTaxableIncome+taxableGain);
+      var totalTax = ordinaryTax+capGainsTax+stateTax;
 
-      var grossIncome = actualTrad+desiredRoth+desiredTax+actualEsop+ssIncome;
+      // Rental cash flow and the HSA-covered portion of healthcare are not run
+      // through this tax engine: rental profit is often substantially sheltered by
+      // depreciation in practice (not modeled here), and qualified HSA withdrawals
+      // are tax-free by law -- see methodology.
+      var grossIncome = actualTrad+desiredRoth+desiredTax+actualEsop+ssIncome+rentalIncomeReal;
       var afterTaxTotal = grossIncome-totalTax;
       var ordinaryEffRate = ordinaryTaxableIncome > 0 ? ordinaryTax/ordinaryTaxableIncome : 0;
       var extraAfterTax = extraFromRMD*(1-ordinaryEffRate);
-      var spendableAfterTax = afterTaxTotal-extraAfterTax;
+      // The portion of this year's withdrawal that went to cover the HSA-uncovered
+      // healthcare gap was never available to spend on anything else, so -- like the
+      // reinvested extra-from-RMD amount -- it's netted back out of spendable income.
+      var spendableAfterTax = afterTaxTotal-extraAfterTax-healthcareShortfall;
 
       bal.traditional = Math.max(0, bal.traditional-actualTrad)*(1+realReturn);
       bal.roth = Math.max(0, bal.roth-desiredRoth)*(1+realReturn);
       bal.taxable = Math.max(0, bal.taxable-desiredTax+extraAfterTax)*(1+realReturn);
       bal.esop = Math.max(0, bal.esop-actualEsop)*(1+realEsopReturn);
+      bal.hsa = Math.max(0, bal.hsa-hsaWithdrawal)*(1+realReturn);
 
       rows.push({
         age:age, year:CONFIG.CURRENT_YEAR+(age-inputs.currentAge),
-        ssIncome:ssIncome, rmdTrad:rmdTrad, rmdEsop:rmdEsop, extraFromRMD:extraFromRMD,
+        ssIncome:ssIncome, rentalIncome:rentalIncomeReal, rmdTrad:rmdTrad, rmdEsop:rmdEsop, extraFromRMD:extraFromRMD,
         withdrawalTrad:actualTrad, withdrawalRoth:desiredRoth, withdrawalTaxable:desiredTax, withdrawalEsop:actualEsop,
-        grossIncome:grossIncome, totalTax:totalTax, afterTaxTotal:afterTaxTotal, spendableAfterTax:spendableAfterTax,
-        balTraditional:bal.traditional, balRoth:bal.roth, balTaxable:bal.taxable, balEsop:bal.esop,
-        balTotal:bal.traditional+bal.roth+bal.taxable+bal.esop
+        healthcareCost:healthcareCostReal, hsaWithdrawal:hsaWithdrawal, healthcareShortfall:healthcareShortfall,
+        grossIncome:grossIncome, totalTax:totalTax, stateTax:stateTax, afterTaxTotal:afterTaxTotal, spendableAfterTax:spendableAfterTax,
+        balTraditional:bal.traditional, balRoth:bal.roth, balTaxable:bal.taxable, balEsop:bal.esop, balHsa:bal.hsa,
+        balTotal:bal.traditional+bal.roth+bal.taxable+bal.esop+bal.hsa
       });
     }
-    return {rows:rows, ssAnnualReal:ssAnnualReal, targetSpendReal:targetSpendReal, swr:swr, totalAtRetirementReal:totalAtRetirementReal, rmdAge:rmdAge};
+    return {rows:rows, ssAnnualReal:ssAnnualReal, targetSpendReal:targetSpendReal, swr:swr, totalAtRetirementReal:totalAtRetirementReal, rmdAge:rmdAge, rentalIncomeReal:rentalIncomeReal};
   }
 
   // Objective: total lifetime after-tax resources = money actually spent across
@@ -1042,7 +1388,7 @@
     var proj = projectBalances(inputs);
     var yearsToRetirement = inputs.retirementAge - inputs.currentAge;
     var inflFactor = Math.pow(1+inputs.inflationRate/100, yearsToRetirement);
-    var finalTotal = proj.finalBalances.traditional + proj.finalBalances.roth + proj.finalBalances.taxable + proj.finalBalances.esop;
+    var finalTotal = proj.finalBalances.traditional + proj.finalBalances.roth + proj.finalBalances.taxable + proj.finalBalances.esop + (proj.finalBalances.hsa||0);
 
     var nominalBalance = finalTotal;
     var realBalance = finalTotal/inflFactor;
@@ -1134,10 +1480,25 @@
       esopGrowthRate: num('esopGrowthRate'),
       esopLoanPayoffYear: num('esopLoanPayoffYear'),
       esopPostPayoffContribPct: num('esopPostPayoffContribPct'),
+      hsaBalance: num('hsaBalance'),
+      hsaContribPct: num('hsaContribPct'),
+      hsaCoverage: document.getElementById('hsaCoverage').value,
+      healthcareAnnualCost: num('healthcareAnnualCost'),
       expectedReturn: num('expectedReturn'),
       inflationRate: num('inflationRate'),
+      stateTaxRate: num('stateTaxRate'),
       ssClaimAge: ssClaimAgeTouched ? num('ssClaimAge') : null,
-      trustSpendRate: num('trustSpendRate')
+      withdrawalStrategy: document.getElementById('withdrawalStrategy').value,
+      trustSpendRate: num('trustSpendRate'),
+      reAptUnits: num('reAptUnits'), reAptAvgSize: num('reAptAvgSize'), reAptValue: num('reAptValue'),
+      reAptRent: num('reAptRent'), reAptExpenses: num('reAptExpenses'), reAptMortgage: num('reAptMortgage'),
+      reAptEquity: num('reAptEquity'), reAptRemainingTerm: num('reAptRemainingTerm'),
+      reCondoUnits: num('reCondoUnits'), reCondoAvgSize: num('reCondoAvgSize'), reCondoValue: num('reCondoValue'),
+      reCondoRent: num('reCondoRent'), reCondoExpenses: num('reCondoExpenses'), reCondoMortgage: num('reCondoMortgage'),
+      reCondoEquity: num('reCondoEquity'), reCondoRemainingTerm: num('reCondoRemainingTerm'),
+      reSfhUnits: num('reSfhUnits'), reSfhAvgSize: num('reSfhAvgSize'), reSfhValue: num('reSfhValue'),
+      reSfhRent: num('reSfhRent'), reSfhExpenses: num('reSfhExpenses'), reSfhMortgage: num('reSfhMortgage'),
+      reSfhEquity: num('reSfhEquity'), reSfhRemainingTerm: num('reSfhRemainingTerm')
     };
   }
 
@@ -1150,7 +1511,7 @@
     if (inputs.ssClaimAge !== null && !(inputs.ssClaimAge >= 62 && inputs.ssClaimAge <= 70)) errors.push('Social Security claiming age must be between 62 and 70.');
     if (!isNaN(inputs.esopLoanPayoffYear) && !(inputs.esopLoanPayoffYear >= 2026 && inputs.esopLoanPayoffYear <= 2100)) errors.push('ESOP loan payoff year must be between 2026 and 2100.');
     Object.keys(inputs).forEach(function(k){
-      if (k === 'filingStatus' || k === 'sex') return;
+      if (k === 'filingStatus' || k === 'sex' || k === 'hsaCoverage' || k === 'withdrawalStrategy') return;
       if (k === 'ssClaimAge' && inputs[k] === null) return;
       if (k === 'esopLoanPayoffYear' && isNaN(inputs[k])) return; // optional -- blank means "not leveraged / unknown"
       if (isNaN(inputs[k])) errors.push('All fields must be filled in.');
@@ -1182,7 +1543,8 @@
       inkSoft: s.getPropertyValue('--ink-soft').trim(),
       border: s.getPropertyValue('--border').trim(),
       surface: s.getPropertyValue('--surface').trim(),
-      stock: s.getPropertyValue('--chart-stock').trim()
+      stock: s.getPropertyValue('--chart-stock').trim(),
+      forest: s.getPropertyValue('--forest').trim()
     };
   }
 
@@ -1194,6 +1556,7 @@
     var roth = results.proj.rows.map(function(r){ return Math.round(conv(r.roth, r.age)); });
     var taxable = results.proj.rows.map(function(r){ return Math.round(conv(r.taxable, r.age)); });
     var esop = results.proj.rows.map(function(r){ return Math.round(conv(r.esop, r.age)); });
+    var hsa = results.proj.rows.map(function(r){ return Math.round(conv(r.hsa, r.age)); });
 
     var ctx = document.getElementById('growthChart').getContext('2d');
     var data = {
@@ -1202,7 +1565,8 @@
         {label:'Traditional', data:trad, backgroundColor:c.trad+'CC', borderColor:c.trad, borderWidth:1.5, fill:true, stack:'s', pointRadius:0, tension:0.15},
         {label:'Roth', data:roth, backgroundColor:c.roth+'CC', borderColor:c.roth, borderWidth:1.5, fill:true, stack:'s', pointRadius:0, tension:0.15},
         {label:'Taxable', data:taxable, backgroundColor:c.taxable+'CC', borderColor:c.taxable, borderWidth:1.5, fill:true, stack:'s', pointRadius:0, tension:0.15},
-        {label:'ESOP', data:esop, backgroundColor:c.stock+'CC', borderColor:c.stock, borderWidth:1.5, fill:true, stack:'s', pointRadius:0, tension:0.15}
+        {label:'ESOP', data:esop, backgroundColor:c.stock+'CC', borderColor:c.stock, borderWidth:1.5, fill:true, stack:'s', pointRadius:0, tension:0.15},
+        {label:'HSA', data:hsa, backgroundColor:c.forest+'99', borderColor:c.forest, borderWidth:1.5, fill:true, stack:'s', pointRadius:0, tension:0.15}
       ]
     };
     var opts = {
@@ -1246,6 +1610,7 @@
       tr.innerHTML = '<td>'+r.age+'</td><td>'+r.year+'</td><td class="num">'+fmtCompact(conv(r.salary,r.age))+
         '</td><td class="num">'+fmtCompact(conv(r.traditional,r.age))+'</td><td class="num">'+fmtCompact(conv(r.roth,r.age))+
         '</td><td class="num">'+fmtCompact(conv(r.taxable,r.age))+'</td><td class="num">'+fmtCompact(conv(r.esop,r.age))+
+        '</td><td class="num">'+fmtCompact(conv(r.hsa,r.age))+
         '</td><td class="num">'+fmtCompact(conv(r.total,r.age))+'</td>';
       body.appendChild(tr);
     });
@@ -1288,12 +1653,18 @@
     var conv = function(v, age){ return displayMode==='nominal' ? nominalFromReal(v, age, inputs) : v; };
     results.sim.rows.forEach(function(r){
       var tr = document.createElement('tr');
+      var federalTax = r.totalTax - r.stateTax;
       tr.innerHTML = '<td>'+r.age+'</td><td>'+r.year+'</td><td class="num">'+fmtCompact(conv(r.ssIncome,r.age))+
+        '</td><td class="num">'+(r.rentalIncome>0 ? fmtCompact(conv(r.rentalIncome,r.age)) : '—')+
         '</td><td class="num">'+fmtCompact(conv(r.withdrawalTrad,r.age))+'</td><td class="num">'+fmtCompact(conv(r.withdrawalRoth,r.age))+
         '</td><td class="num">'+fmtCompact(conv(r.withdrawalTaxable,r.age))+'</td><td class="num">'+fmtCompact(conv(r.withdrawalEsop,r.age))+
         '</td><td class="num">'+(r.extraFromRMD>1 ? fmtCompact(conv(r.extraFromRMD,r.age)) : '—')+
-        '</td><td class="num">'+fmtCompact(conv(r.grossIncome,r.age))+'</td><td class="num">'+fmtCompact(conv(r.totalTax,r.age))+
-        '</td><td class="num">'+fmtCompact(conv(r.afterTaxTotal,r.age))+'</td><td class="num">'+fmtCompact(conv(r.balTotal,r.age))+'</td>';
+        '</td><td class="num">'+(r.hsaWithdrawal>0 ? '−'+fmtCompact(conv(r.hsaWithdrawal,r.age)) : '—')+
+        '</td><td class="num">'+(r.healthcareShortfall>0 ? '−'+fmtCompact(conv(r.healthcareShortfall,r.age)) : '—')+
+        '</td><td class="num">'+fmtCompact(conv(r.grossIncome,r.age))+'</td><td class="num">'+fmtCompact(conv(federalTax,r.age))+
+        '</td><td class="num">'+fmtCompact(conv(r.stateTax,r.age))+
+        '</td><td class="num">'+fmtCompact(conv(r.afterTaxTotal,r.age))+'</td><td class="num">'+fmtCompact(conv(r.spendableAfterTax,r.age))+
+        '</td><td class="num">'+fmtCompact(conv(r.balTotal,r.age))+'</td>';
       body.appendChild(tr);
     });
   }
@@ -1345,13 +1716,24 @@
     var ssAnnualDisplay = displayMode==='nominal' ? nominalFromReal(results.sim.ssAnnualReal, results.ssClaimAge, inputs) : results.sim.ssAnnualReal;
     var grossIncomeDisplay = displayMode==='nominal' ? nominalFromReal(results.firstYear.grossIncome, inputs.retirementAge, inputs) : results.firstYear.grossIncome;
     var afterTaxDisplay = displayMode==='nominal' ? nominalFromReal(results.firstYear.afterTaxTotal, inputs.retirementAge, inputs) : results.firstYear.afterTaxTotal;
+    var spendableDisplay = displayMode==='nominal' ? nominalFromReal(results.firstYear.spendableAfterTax, inputs.retirementAge, inputs) : results.firstYear.spendableAfterTax;
+    var rentalDisplay = displayMode==='nominal' ? nominalFromReal(results.firstYear.rentalIncome, inputs.retirementAge, inputs) : results.firstYear.rentalIncome;
+    var healthcareCostDisplay = displayMode==='nominal' ? nominalFromReal(results.firstYear.healthcareCost, inputs.retirementAge, inputs) : results.firstYear.healthcareCost;
+    var hsaWithdrawalDisplay = displayMode==='nominal' ? nominalFromReal(results.firstYear.hsaWithdrawal, inputs.retirementAge, inputs) : results.firstYear.hsaWithdrawal;
+    var healthcareShortfallDisplay = displayMode==='nominal' ? nominalFromReal(results.firstYear.healthcareShortfall, inputs.retirementAge, inputs) : results.firstYear.healthcareShortfall;
 
     document.getElementById('swrValue').textContent = results.swr.toFixed(2);
     document.getElementById('withdrawalReal').textContent = fmtCompact(withdrawalDisplay) + '/yr';
     document.getElementById('ssAnnual').textContent = fmtCompact(ssAnnualDisplay) + '/yr';
     document.getElementById('ssClaimAgeDisplay').textContent = results.ssClaimAge;
+    document.getElementById('rentalIncome').textContent = fmtCompact(rentalDisplay) + '/yr';
+    document.getElementById('healthcareCostCard').textContent = fmtCompact(healthcareCostDisplay) + '/yr';
+    document.getElementById('healthcareCostNote').textContent = hsaWithdrawalDisplay > 0
+      ? fmtCompact(hsaWithdrawalDisplay) + '/yr from HSA' + (healthcareShortfallDisplay > 0 ? ', ' + fmtCompact(healthcareShortfallDisplay) + '/yr shortfall from other income' : ' covers it in full')
+      : 'no HSA balance to draw on yet — full amount comes from other income';
     document.getElementById('grossIncome').textContent = fmtCompact(grossIncomeDisplay) + '/yr';
     document.getElementById('afterTaxIncome').textContent = fmtCompact(afterTaxDisplay) + '/yr';
+    document.getElementById('spendableIncome').textContent = fmtCompact(spendableDisplay) + '/yr';
     // Ratio of tax to gross income is unchanged by uniform nominal/real scaling.
     document.getElementById('effTaxRate').textContent = fmtPct((results.firstYear.totalTax/results.firstYear.grossIncome)*100);
 
@@ -1461,6 +1843,14 @@
     if (!isNaN(inputs.esopLoanPayoffYear)){
       kv('ESOP: loan payoff year / contribution after', String(inputs.esopLoanPayoffYear)+' / '+(inputs.esopPostPayoffContribPct||0)+'%/yr');
     }
+    kv('HSA: value / contribution / coverage', fmtUSD(inputs.hsaBalance)+' / '+inputs.hsaContribPct+'%/yr / '+(inputs.hsaCoverage==='family'?'Family':'Self-only'));
+    kv('Healthcare cost (at 65, today\'s $)', fmtUSD(inputs.healthcareAnnualCost)+'/yr per person');
+    kv('State income tax rate', inputs.stateTaxRate+'% flat');
+    kv('Withdrawal strategy', inputs.withdrawalStrategy==='tax-optimized' ? 'Tax-optimized (taxable, then trad.+ESOP, then Roth)' : 'Proportional (by balance share)');
+    var rentalCashFlowPdf = realEstateAnnualCashFlow(inputs);
+    if (rentalCashFlowPdf !== 0){
+      kv('Rental real estate: net cash flow', fmtUSD(rentalCashFlowPdf)+'/yr, today\'s $ (all categories combined)');
+    }
     kv('Social Security claiming age', String(results.ssClaimAge) + (ssClaimAgeTouched ? ' (your choice)' : ' (recommended)'));
     kv('Trust annual spend rate', inputs.trustSpendRate+'%/yr');
     y += 8; rule();
@@ -1473,14 +1863,22 @@
 
     var pdfWithdrawal = displayMode==='nominal' ? nominalFromReal(results.grossWithdrawalReal, inputs.retirementAge, inputs) : results.grossWithdrawalReal;
     var pdfSSAnnual = displayMode==='nominal' ? nominalFromReal(results.sim.ssAnnualReal, results.ssClaimAge, inputs) : results.sim.ssAnnualReal;
+    var pdfRental = displayMode==='nominal' ? nominalFromReal(results.firstYear.rentalIncome, inputs.retirementAge, inputs) : results.firstYear.rentalIncome;
     var pdfGross = displayMode==='nominal' ? nominalFromReal(results.firstYear.grossIncome, inputs.retirementAge, inputs) : results.firstYear.grossIncome;
     var pdfAfterTax = displayMode==='nominal' ? nominalFromReal(results.firstYear.afterTaxTotal, inputs.retirementAge, inputs) : results.firstYear.afterTaxTotal;
+    var pdfSpendable = displayMode==='nominal' ? nominalFromReal(results.firstYear.spendableAfterTax, inputs.retirementAge, inputs) : results.firstYear.spendableAfterTax;
+    var pdfHealthcareCost = displayMode==='nominal' ? nominalFromReal(results.firstYear.healthcareCost, inputs.retirementAge, inputs) : results.firstYear.healthcareCost;
+    var pdfHsaWithdrawal = displayMode==='nominal' ? nominalFromReal(results.firstYear.hsaWithdrawal, inputs.retirementAge, inputs) : results.firstYear.hsaWithdrawal;
+    var pdfHealthcareShortfall = displayMode==='nominal' ? nominalFromReal(results.firstYear.healthcareShortfall, inputs.retirementAge, inputs) : results.firstYear.healthcareShortfall;
     h('Retirement income, first year ('+basisLabel()+')', 13);
     kv('Portfolio withdrawal target ('+results.swr.toFixed(2)+'% rate)', fmtUSD(pdfWithdrawal)+'/yr');
     kv('Social Security (claiming at '+results.ssClaimAge+')', fmtUSD(pdfSSAnnual)+'/yr');
+    if (pdfRental !== 0) kv('Rental income', fmtUSD(pdfRental)+'/yr');
+    kv('Healthcare cost (from HSA / shortfall)', fmtUSD(pdfHsaWithdrawal)+' / '+fmtUSD(pdfHealthcareShortfall)+' of '+fmtUSD(pdfHealthcareCost)+' total');
     kv('Combined, pre-tax', fmtUSD(pdfGross)+'/yr');
-    kv('Combined, after federal tax', fmtUSD(pdfAfterTax)+'/yr');
-    kv('Effective federal tax rate', ((results.firstYear.totalTax/results.firstYear.grossIncome)*100).toFixed(1)+'%');
+    kv('Combined, after tax (fed+state)', fmtUSD(pdfAfterTax)+'/yr');
+    kv('Spendable (after healthcare shortfall)', fmtUSD(pdfSpendable)+'/yr');
+    kv('Effective tax rate (fed+state)', ((results.firstYear.totalTax/results.firstYear.grossIncome)*100).toFixed(1)+'%');
     kv('RMDs begin at age', String(results.ssBase.rmdStartAge));
     var gapYearsPdf = Math.max(0, results.ssClaimAge - inputs.retirementAge);
     if (gapYearsPdf > 0){
@@ -1531,8 +1929,8 @@
     // Milestone table
     doc.addPage(); y = margin;
     h('Milestones (accumulation, '+basisLabel()+')', 14);
-    var cols = ['Age','Year','Salary','Traditional','Roth','Taxable','ESOP','Total'];
-    var colX = [margin, margin+28, margin+62, margin+118, margin+178, margin+233, margin+288, margin+345];
+    var cols = ['Age','Year','Salary','Traditional','Roth','Taxable','ESOP','HSA','Total'];
+    var colX = [margin, margin+24, margin+52, margin+100, margin+152, margin+204, margin+256, margin+306, margin+352];
     doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(20,33,61);
     cols.forEach(function(c,i){ doc.text(c, colX[i], y); });
     y += 10; rule();
@@ -1542,7 +1940,7 @@
     var accConv = function(v, age){ return displayMode==='nominal' ? v : realFromNominal(v, age, inputs); };
     rows.forEach(function(r){
       ensureSpace(16);
-      var vals = [String(r.age), String(r.year), fmtCompact(accConv(r.salary,r.age)), fmtCompact(accConv(r.traditional,r.age)), fmtCompact(accConv(r.roth,r.age)), fmtCompact(accConv(r.taxable,r.age)), fmtCompact(accConv(r.esop,r.age)), fmtCompact(accConv(r.total,r.age))];
+      var vals = [String(r.age), String(r.year), fmtCompact(accConv(r.salary,r.age)), fmtCompact(accConv(r.traditional,r.age)), fmtCompact(accConv(r.roth,r.age)), fmtCompact(accConv(r.taxable,r.age)), fmtCompact(accConv(r.esop,r.age)), fmtCompact(accConv(r.hsa,r.age)), fmtCompact(accConv(r.total,r.age))];
       vals.forEach(function(v,i){ doc.text(v, colX[i], y); });
       y += 14;
     });
@@ -1550,10 +1948,10 @@
     // Year-by-year retirement income
     doc.addPage(); y = margin;
     h('Year-by-year retirement income ('+basisLabel()+')', 14);
-    p('Every year from retirement through your planning age ('+inputs.deathAge+'). RMD-forced amounts beyond your target spending are reinvested after tax; see methodology.', 9);
+    p('Every year from retirement through your planning age ('+inputs.deathAge+'). RMD-forced amounts beyond your target spending, and any healthcare shortfall, are netted out of "Spendable." See methodology.', 9);
     y += 4;
-    var riCols = ['Age','Year','Soc. Sec.','Gross','Fed. tax','After-tax','Balance'];
-    var riColX = [margin, margin+32, margin+68, margin+140, margin+205, margin+270, margin+345];
+    var riCols = ['Age','Year','Soc.Sec.','Rental','Gross','Tax','After-tax','Spendable','Balance'];
+    var riColX = [margin, margin+24, margin+58, margin+108, margin+158, margin+206, margin+252, margin+302, margin+356];
     doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(20,33,61);
     riCols.forEach(function(c,i){ doc.text(c, riColX[i], y); });
     y += 10; rule();
@@ -1561,10 +1959,13 @@
     var decConv = function(v, age){ return displayMode==='nominal' ? nominalFromReal(v, age, inputs) : v; };
     results.sim.rows.forEach(function(r){
       ensureSpace(14);
-      var vals = [String(r.age), String(r.year), fmtCompact(decConv(r.ssIncome,r.age)), fmtCompact(decConv(r.grossIncome,r.age)), fmtCompact(decConv(r.totalTax,r.age)), fmtCompact(decConv(r.afterTaxTotal,r.age)), fmtCompact(decConv(r.balTotal,r.age))];
+      var vals = [String(r.age), String(r.year), fmtCompact(decConv(r.ssIncome,r.age)), fmtCompact(decConv(r.rentalIncome,r.age)), fmtCompact(decConv(r.grossIncome,r.age)), fmtCompact(decConv(r.totalTax,r.age)), fmtCompact(decConv(r.afterTaxTotal,r.age)), fmtCompact(decConv(r.spendableAfterTax,r.age)), fmtCompact(decConv(r.balTotal,r.age))];
       vals.forEach(function(v,i){ doc.text(v, riColX[i], y); });
       y += 13;
     });
+    ensureSpace(40);
+    y += 4;
+    p('Healthcare costs are paid from your HSA first, then from other income (shown netted into "Spendable" above, not broken out per year in this table for space — see the on-screen year-by-year table for the HSA / shortfall breakdown, or the "Healthcare cost" figure on the previous page for your first retirement year).', 8);
 
     // Legacy & trust
     doc.addPage(); y = margin;
@@ -1595,11 +1996,11 @@
     p('Social Security: uses the real 2026 SSA bend-point formula (90%/32%/15% of AIME at $1,226 and $7,391), but a simplified proxy earnings history built from your current salary projected across your career using real (above-inflation) salary growth, capped at the 2026 taxable maximum of $184,500, using your top 35 years. Early/delayed claiming adjustments use the actual SSA percentages. This will differ from your real SSA statement, which uses your actual earnings record.');
     p('Social Security claiming-age recommendation: every age 62-70 is simulated across your full retirement and scored by total lifetime after-tax income plus unspent legacy at death (reinvested RMD dollars are not double-counted). It is a mathematical optimization only, and does not know your health, other income, marital/survivor coordination, or preference for certainty.');
     p('ESOP: employer-funded (not a payroll deferral), allocated roughly by compensation, and taxed as ordinary income on distribution like a 401(k). It grows at your own assumed company-stock rate, not the S&P 500, and its contribution rate as % of pay decays by your chosen "allocation decay" rate each year, reflecting how ESOP allocations often shrink over time as headcount grows faster than the share pool. That decay rate is a disclosed, unsourced heuristic (default 3%/yr) — adjust it if you know your company\'s actual trend. Vesting and single-company concentration risk are not modeled.');
-    p('Taxes: federal only, no state/local taxes. Computed in today\'s dollars using 2026 brackets and standard deduction. Traditional and ESOP withdrawals taxed as ordinary income; Roth withdrawals tax-free; taxable-brokerage withdrawals taxed on their embedded gain at long-term capital gains rates. Social Security taxability uses the IRS combined-income test. Withdrawals are drawn proportionally across account types (subject to RMDs), a simplification — real tax-efficient sequencing could improve on this.');
+    p('Taxes: federal plus a flat state tax rate (editable, defaults to Utah\'s 4.45%). Computed in today\'s dollars using 2026 federal brackets and standard deduction. Traditional and ESOP withdrawals taxed as ordinary income; Roth withdrawals tax-free; taxable-brokerage withdrawals taxed on their embedded gain at long-term capital gains rates; the state rate applies flat to both. Social Security taxability uses the IRS combined-income test. Withdrawal order across account types depends on the withdrawal-strategy toggle (proportional or tax-optimized, subject to RMDs) — see below.');
     p('Dollar comparisons: "Nominal" = actual future dollars with no inflation adjustment. "Today\'s purchasing power" deflates using your assumed inflation rate. "1996 purchasing power" additionally applies actual historical U.S. CPI-U inflation from 1996 to 2026 (a cumulative factor of about 2.13x), referencing the year The Millionaire Next Door was published and popularized "millionaire" as a benchmark.');
     p('Nominal vs. today\'s-dollars toggle: aside from the three balance-at-retirement figures (which always show all three bases), every dollar figure in this report uses the basis selected on screen at the time it was generated. In nominal mode, retirement-year figures (which are computed natively in real terms) are inflated back up to the actual dollar amount that would appear in that future calendar year; in today\'s-dollars mode, accumulation-phase figures (computed natively in nominal terms) are deflated to current purchasing power. The lifetime Social Security comparison total, in nominal mode, is the sum of each year\'s actual future dollars received -- a legitimate but unusual figure, since it adds together dollars from many different future years.');
     p('Legacy & trust: whatever remains at your planning age seeds a trust that distributes a fixed percentage of its balance annually and grows at your real (inflation-adjusted) market return. It does not model trust/estate taxes, trustee fees, cost-basis step-up, or your ESOP\'s company-specific return. A 100-year projection at constant rates is illustrative of compounding vs. spending, not a forecast to rely on.');
-    p('Not included: healthcare and long-term-care costs, pensions, home equity, other debts or assets, market volatility (a constant annual return is assumed rather than real year-to-year sequence risk), and state or local taxes.');
+    p('Not included: long-term-care costs specifically, pensions, home equity or other real estate as a balance-sheet asset, other debts or assets, market volatility (a constant annual return is assumed rather than real year-to-year sequence risk), progressive state tax brackets or credits (a flat rate is used), the pre-65/pre-Medicare healthcare cost gap (the healthcare baseline is anchored to Medicare-era costs and likely understates pre-65 costs), rental property income tax and depreciation, mortgage payoff\'s effect on rental cash flow, HSA tax treatment for a non-spouse heir, ESOP diversification elections, and a second earner\'s own income or Social Security benefit under married filing jointly.');
     y += 6; rule();
     doc.setFont('helvetica','italic'); doc.setFontSize(9); doc.setTextColor(110,110,110);
     var disc = doc.splitTextToSize('This report is an educational planning illustration, not personalized financial, tax, legal, or Social Security advice. Figures are estimates based on the assumptions you entered and current (2026) public tax and Social Security rules, which are subject to change. Consult a fee-only fiduciary financial advisor and a tax professional before making retirement decisions.', pageW-margin*2);

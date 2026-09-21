@@ -111,3 +111,58 @@ const alwaysLeveraged = Object.assign({}, esopOnly, {esopDilutionRate: 0, esopLo
 const projAlwaysLeveraged = E.projectBalances(alwaysLeveraged);
 console.log('Backward-compat check (no payoff year vs. payoff year far in future) match:',
   Math.abs(projNoPayoffYear.finalBalances.esop - projAlwaysLeveraged.finalBalances.esop) < 0.01 ? 'OK' : 'MISMATCH');
+
+console.log('\n=== State tax sanity ===');
+const withState = Object.assign({}, base, {stateTaxRate: 4.45});
+const withoutState = Object.assign({}, base, {stateTaxRate: 0});
+const rWithState = E.computeResults(withState);
+const rWithoutState = E.computeResults(withoutState);
+console.log('First-year total tax with 4.45% state tax:', fmt(rWithState.firstYear.totalTax));
+console.log('First-year total tax with no state tax:', fmt(rWithoutState.firstYear.totalTax));
+console.log('State tax is additive (with > without):', rWithState.firstYear.totalTax > rWithoutState.firstYear.totalTax ? 'OK' : 'MISMATCH');
+
+console.log('\n=== Withdrawal strategy sanity ===');
+const proportional = Object.assign({}, base, {withdrawalStrategy: 'proportional', traditionalBalance: 500000, rothBalance: 500000, taxableBalance: 500000, esopBalance: 0});
+const taxOptimized = Object.assign({}, base, {withdrawalStrategy: 'tax-optimized', traditionalBalance: 500000, rothBalance: 500000, taxableBalance: 500000, esopBalance: 0});
+const rProp = E.computeResults(proportional);
+const rOpt = E.computeResults(taxOptimized);
+console.log('Proportional first-year: trad', fmt(rProp.firstYear.withdrawalTrad), 'roth', fmt(rProp.firstYear.withdrawalRoth), 'taxable', fmt(rProp.firstYear.withdrawalTaxable));
+console.log('Tax-optimized first-year: trad', fmt(rOpt.firstYear.withdrawalTrad), 'roth', fmt(rOpt.firstYear.withdrawalRoth), 'taxable', fmt(rOpt.firstYear.withdrawalTaxable));
+console.log('Tax-optimized draws taxable first, leaves Roth untouched while taxable+trad can cover spend (expect roth=0):', rOpt.firstYear.withdrawalRoth === 0 ? 'OK' : 'CHECK: ' + rOpt.firstYear.withdrawalRoth);
+console.log('Proportional draws from all three simultaneously (expect roth > 0):', rProp.firstYear.withdrawalRoth > 0 ? 'OK' : 'MISMATCH');
+
+console.log('\n=== HSA sanity ===');
+const withHsa = Object.assign({}, base, {hsaBalance: 5000, hsaContribPct: 5, hsaCoverage: 'family'});
+const projHsa = E.projectBalances(withHsa);
+console.log('HSA balance at retirement (35 yrs, 5% of salary, family coverage):', fmt(projHsa.finalBalances.hsa));
+console.log('HSA grows (final > initial):', projHsa.finalBalances.hsa > 5000 ? 'OK' : 'MISMATCH');
+// contribution should be capped at the (inflation-grown) family HSA limit even at high hsaContribPct
+const hsaCapped = Object.assign({}, base, {hsaBalance: 0, hsaContribPct: 90, hsaCoverage: 'self', currentSalary: 500000});
+const projHsaCapped = E.projectBalances(hsaCapped);
+const year1HsaGrowth = projHsaCapped.rows[1].hsa;
+console.log('HSA contribution capped in year 1 (self-only limit $4,400, expect ~4400-4620 after growth):', fmt(year1HsaGrowth));
+console.log('Cap enforced (year1 far below 90% of $500k salary = $450k):', year1HsaGrowth < 10000 ? 'OK' : 'MISMATCH');
+
+console.log('\n=== Healthcare + HSA offset sanity ===');
+const noHsaHealthcare = Object.assign({}, base, {healthcareAnnualCost: 7300, hsaBalance: 0, retirementAge: 65, deathAge: 70});
+const rNoHsa = E.computeResults(noHsaHealthcare);
+console.log('Healthcare cost at 65 (should equal the input, ~7300):', fmt(rNoHsa.firstYear.healthcareCost));
+console.log('With zero HSA balance, full cost is a shortfall covered by other income:', fmt(rNoHsa.firstYear.healthcareShortfall));
+console.log('HSA withdrawal with zero HSA balance (expect 0):', fmt(rNoHsa.firstYear.hsaWithdrawal));
+
+const fullHsaHealthcare = Object.assign({}, base, {healthcareAnnualCost: 7300, hsaBalance: 500000, hsaContribPct: 0, retirementAge: 65, deathAge: 70});
+const rFullHsa = E.computeResults(fullHsaHealthcare);
+console.log('With a large HSA balance, shortfall should be 0:', rFullHsa.firstYear.healthcareShortfall === 0 ? 'OK' : 'MISMATCH: ' + rFullHsa.firstYear.healthcareShortfall);
+console.log('HSA withdrawal covers the full cost:', Math.abs(rFullHsa.firstYear.hsaWithdrawal - rFullHsa.firstYear.healthcareCost) < 1 ? 'OK' : 'MISMATCH');
+
+console.log('\n=== Real estate cash flow sanity ===');
+const withRentals = Object.assign({}, base, {
+  reAptRent: 3000, reAptExpenses: 1800,
+  reCondoRent: 1800, reCondoExpenses: 1200,
+  reSfhRent: 2500, reSfhExpenses: 1500,
+});
+console.log('Total annual rental cash flow (expect (3000-1800+1800-1200+2500-1500)*12 = 33600):', fmt(E.realEstateAnnualCashFlow(withRentals)));
+const rRentals = E.computeResults(withRentals);
+const rNoRentals = E.computeResults(base);
+console.log('grossIncome with rentals > without:', rRentals.firstYear.grossIncome > rNoRentals.firstYear.grossIncome ? 'OK' : 'MISMATCH');
+console.log('Difference matches annual cash flow:', Math.abs((rRentals.firstYear.grossIncome - rNoRentals.firstYear.grossIncome) - E.realEstateAnnualCashFlow(withRentals)) < 1 ? 'OK' : 'MISMATCH');

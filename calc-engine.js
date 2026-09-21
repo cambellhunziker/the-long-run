@@ -21,6 +21,33 @@ const CONFIG = {
   LE_AGES: [18,20,22,25,30,35,40,45,50,55,60,65,70,75,80,85,90],
   LE_MALE:   [58.56,56.69,54.83,52.06,47.50,43.02,38.59,34.21,29.90,25.73,21.79,18.12,14.66,11.42,8.50,6.04,4.11],
   LE_FEMALE: [63.69,61.74,59.80,56.90,52.08,47.34,42.64,38.01,33.45,29.01,24.73,20.66,16.76,13.10,9.82,7.02,4.80],
+  // State income tax: modeled as a single flat rate applied on top of federal, since
+  // that's how Utah (this tool's default) actually works -- a flat rate on both
+  // ordinary income and capital gains (Utah has no preferential capital-gains rate).
+  // Default sourced from the Tax Foundation, effective 1/1/2026. Editable in the UI
+  // for anyone in a different state; this tool doesn't model progressive state
+  // brackets or state-specific credits/deductions.
+  UTAH_FLAT_TAX_RATE: 4.45,
+  // 2026 IRS HSA contribution limits (self-only / family) and the 55+ catch-up,
+  // held constant in these dollars and then grown with inflation year over year in
+  // the projection, matching how the IRS actually adjusts these limits annually.
+  HSA_LIMIT_SELF: 4400,
+  HSA_LIMIT_FAMILY: 8750,
+  HSA_CATCHUP_55: 1000,
+  // Average annual retirement healthcare cost at age 65, today's dollars, per person.
+  // Derived from the Milliman 2026 Retiree Health Cost Index's lifetime cost figures
+  // (a 65-year-old's projected lifetime Original Medicare + Medigap Plan G + Part D
+  // spend, back-solved to an equivalent first-year cost under Milliman's own 4.8%
+  // medical trend assumption). Milliman's data shows this starting annual figure is
+  // very similar for men and women -- the higher female LIFETIME total is almost
+  // entirely a function of living longer (already reflected in this tool's
+  // sex-specific life-expectancy default), not a higher annual rate -- so this tool
+  // uses one figure for both sexes rather than fabricating a gender split the
+  // underlying data doesn't really support.
+  HEALTHCARE_BASE_ANNUAL_AGE65: 7300,
+  // Milliman's projected medical trend: nominal annual healthcare cost growth,
+  // distinct from (and higher than) general inflation.
+  HEALTHCARE_MEDICAL_TREND: 4.8,
 };
 
 function fraMonths(birthYear) {
@@ -163,7 +190,7 @@ function projectBalances(inputs) {
   const r = inputs.expectedReturn / 100;
   const esopR = inputs.esopGrowthRate / 100;
   let salary = inputs.currentSalary;
-  let bal = { traditional: inputs.traditionalBalance, roth: inputs.rothBalance, taxable: inputs.taxableBalance, esop: inputs.esopBalance || 0 };
+  let bal = { traditional: inputs.traditionalBalance, roth: inputs.rothBalance, taxable: inputs.taxableBalance, esop: inputs.esopBalance || 0, hsa: inputs.hsaBalance || 0 };
   let taxableBasis = inputs.taxableBalance;
 
   const nominalSalaryByAge = {};
@@ -171,8 +198,8 @@ function projectBalances(inputs) {
 
   const rows = [{
     age: inputs.currentAge, year: CONFIG.CURRENT_YEAR, salary,
-    traditional: bal.traditional, roth: bal.roth, taxable: bal.taxable, esop: bal.esop,
-    total: bal.traditional + bal.roth + bal.taxable + bal.esop,
+    traditional: bal.traditional, roth: bal.roth, taxable: bal.taxable, esop: bal.esop, hsa: bal.hsa,
+    total: bal.traditional + bal.roth + bal.taxable + bal.esop + bal.hsa,
   }];
 
   for (let i = 0; i < years; i++) {
@@ -209,10 +236,19 @@ function projectBalances(inputs) {
     const esopContribPct = esopBaseContribPct * Math.pow(1 - (inputs.esopDilutionRate || 0) / 100, i);
     const esopContrib = salary * esopContribPct / 100;
 
+    // HSA: triple-tax-advantaged (pre-tax in, tax-free growth, tax-free out for
+    // qualified medical expenses). Capped at the IRS self-only/family limit plus the
+    // 55+ catch-up, with the cap itself grown with inflation to mirror how the IRS
+    // actually indexes it each year.
+    const hsaCapBase = (inputs.hsaCoverage === 'family' ? CONFIG.HSA_LIMIT_FAMILY : CONFIG.HSA_LIMIT_SELF) + (age >= 55 ? CONFIG.HSA_CATCHUP_55 : 0);
+    const hsaCap = hsaCapBase * Math.pow(1 + inputs.inflationRate / 100, i);
+    const hsaContrib = Math.min(salary * (inputs.hsaContribPct || 0) / 100, hsaCap);
+
     bal.traditional = (bal.traditional + employeeTraditional + employerMatch) * (1 + r);
     bal.roth = (bal.roth + employeeRoth) * (1 + r);
     bal.taxable = (bal.taxable + taxableContrib) * (1 + r);
     bal.esop = (bal.esop + esopContrib) * (1 + esopR);
+    bal.hsa = (bal.hsa + hsaContrib) * (1 + r);
     taxableBasis += taxableContrib;
 
     salary *= (1 + inputs.salaryGrowthRate / 100);
@@ -221,8 +257,8 @@ function projectBalances(inputs) {
 
     rows.push({
       age: nextAge, year: CONFIG.CURRENT_YEAR + i + 1, salary,
-      traditional: bal.traditional, roth: bal.roth, taxable: bal.taxable, esop: bal.esop,
-      total: bal.traditional + bal.roth + bal.taxable + bal.esop,
+      traditional: bal.traditional, roth: bal.roth, taxable: bal.taxable, esop: bal.esop, hsa: bal.hsa,
+      total: bal.traditional + bal.roth + bal.taxable + bal.esop + bal.hsa,
     });
   }
 
@@ -244,6 +280,25 @@ function proxyEarningsHistory(inputs) {
     history[a] = s;
   }
   return history;
+}
+
+// Rental real estate: three separate categories (apartments, townhouse/condo, single-
+// family) since they tend to have different rent, expense, and financing profiles.
+// Each category's monthly rent and monthly expenses are entered as totals across all
+// units in that category (not per-unit), so cash flow is simply rent minus expenses --
+// unit count and average size are informational context, not part of the math. The
+// mortgage payment is assumed to already be inside "expenses" (as instructed), so this
+// tool does not attempt to model the cash-flow jump when a mortgage is paid off partway
+// through the projection -- see methodology. Net cash flow is held constant in today's
+// (real) dollars for the whole projection, consistent with how every other "real"
+// figure in this tool works.
+function realEstateAnnualCashFlow(inputs) {
+  const categories = ['reApt', 'reCondo', 'reSfh'];
+  return categories.reduce((total, prefix) => {
+    const rent = inputs[prefix + 'Rent'] || 0;
+    const expenses = inputs[prefix + 'Expenses'] || 0;
+    return total + (rent - expenses) * 12;
+  }, 0);
 }
 
 // Claim-age-independent Social Security base: birth year, FRA, AIME, PIA at FRA.
@@ -268,18 +323,59 @@ function ssAnnualForClaimAge(ssBase, claimAge) {
   return adjustedMonthly * 12;
 }
 
+// Splits a spending need across Traditional/Roth/Taxable/ESOP under one of two
+// strategies. "proportional" pulls from each bucket in proportion to its share of the
+// total balance (simple, but not tax-efficient). "tax-optimized" fills the need in a
+// conventional tax-efficient order: Taxable first (preferential/no gains-only tax,
+// preserves tax-deferred and tax-free growth longer), then Traditional+ESOP together
+// (both ordinary income, split pro-rata between the two since taxes don't distinguish
+// them), then Roth last (grows tax-free longest and has no RMDs, so it's the best
+// bucket to leave until the end). Either way, RMDs are applied as a hard floor
+// afterward by the caller -- this only decides the pre-RMD "desired" split.
+function splitWithdrawal(bal, need, strategy) {
+  if (strategy === 'tax-optimized') {
+    let remaining = need;
+    const desiredTax = Math.min(bal.taxable, remaining); remaining -= desiredTax;
+    const ordinaryPool = bal.traditional + bal.esop;
+    const tradShareOfOrdinary = ordinaryPool > 0 ? bal.traditional / ordinaryPool : 0;
+    const ordinaryDraw = Math.min(ordinaryPool, remaining); remaining -= ordinaryDraw;
+    const desiredTrad = ordinaryDraw * tradShareOfOrdinary;
+    const desiredEsop = ordinaryDraw * (1 - tradShareOfOrdinary);
+    const desiredRoth = Math.min(bal.roth, remaining);
+    return { desiredTrad, desiredRoth, desiredTax, desiredEsop };
+  }
+  const totalBal = bal.traditional + bal.roth + bal.taxable + bal.esop;
+  const shareTrad = totalBal > 0 ? bal.traditional / totalBal : 0;
+  const shareRoth = totalBal > 0 ? bal.roth / totalBal : 0;
+  const shareTax = totalBal > 0 ? bal.taxable / totalBal : 0;
+  const shareEsop = totalBal > 0 ? bal.esop / totalBal : 0;
+  return {
+    desiredTrad: Math.min(bal.traditional, need * shareTrad),
+    desiredRoth: Math.min(bal.roth, need * shareRoth),
+    desiredTax: Math.min(bal.taxable, need * shareTax),
+    desiredEsop: Math.min(bal.esop, need * shareEsop),
+  };
+}
+
 // ---- Decumulation phase: retirement age -> death age, year by year, real (today's) dollars ----
 function simulateRetirement(inputs, ssClaimAge, proj, ssBase) {
   const yearsToRetirement = inputs.retirementAge - inputs.currentAge;
   const inflFactor = Math.pow(1 + inputs.inflationRate / 100, yearsToRetirement);
   const realReturn = (1 + inputs.expectedReturn / 100) / (1 + inputs.inflationRate / 100) - 1;
   const realEsopReturn = (1 + inputs.esopGrowthRate / 100) / (1 + inputs.inflationRate / 100) - 1;
+  // Medical costs are assumed to grow faster than general inflation (Milliman's 4.8%
+  // nominal medical trend vs. your own inflation assumption) -- this is the excess,
+  // real growth rate on top of general inflation, applied from age 65 (the anchor age
+  // the base cost figure is sourced at).
+  const realMedicalTrend = (1 + CONFIG.HEALTHCARE_MEDICAL_TREND / 100) / (1 + inputs.inflationRate / 100) - 1;
+  const rentalIncomeReal = realEstateAnnualCashFlow(inputs);
 
   let bal = {
     traditional: proj.finalBalances.traditional / inflFactor,
     roth: proj.finalBalances.roth / inflFactor,
     taxable: proj.finalBalances.taxable / inflFactor,
     esop: proj.finalBalances.esop / inflFactor,
+    hsa: (proj.finalBalances.hsa || 0) / inflFactor,
   };
   const totalAtRetirementReal = bal.traditional + bal.roth + bal.taxable + bal.esop;
   const swr = swrForAge(inputs.retirementAge);
@@ -291,19 +387,22 @@ function simulateRetirement(inputs, ssClaimAge, proj, ssBase) {
   const ssAnnualReal = ssAnnualForClaimAge(ssBase, ssClaimAge);
   const tt = taxTables(inputs.filingStatus);
   const rmdAge = ssBase.rmdStartAge;
+  const stateTaxRate = (inputs.stateTaxRate || 0) / 100;
+  const strategy = inputs.withdrawalStrategy === 'tax-optimized' ? 'tax-optimized' : 'proportional';
 
   const rows = [];
   for (let age = inputs.retirementAge; age <= inputs.deathAge; age++) {
-    const totalBal = bal.traditional + bal.roth + bal.taxable + bal.esop;
-    const shareTrad = totalBal > 0 ? bal.traditional / totalBal : 0;
-    const shareRoth = totalBal > 0 ? bal.roth / totalBal : 0;
-    const shareTax = totalBal > 0 ? bal.taxable / totalBal : 0;
-    const shareEsop = totalBal > 0 ? bal.esop / totalBal : 0;
+    // Healthcare cost this year, in today's dollars: base figure (entered at age 65)
+    // compounded by the excess medical trend for every year above/below 65. Costs
+    // before 65 (pre-Medicare) are likely understated by this formula in reality --
+    // see methodology.
+    const healthcareCostReal = Math.max(0, (inputs.healthcareAnnualCost || 0) * Math.pow(1 + realMedicalTrend, age - 65));
+    const hsaWithdrawal = Math.min(bal.hsa, healthcareCostReal);
+    const healthcareShortfall = healthcareCostReal - hsaWithdrawal;
 
-    const desiredTrad = Math.min(bal.traditional, targetSpendReal * shareTrad);
-    const desiredRoth = Math.min(bal.roth, targetSpendReal * shareRoth);
-    const desiredTax = Math.min(bal.taxable, targetSpendReal * shareTax);
-    const desiredEsop = Math.min(bal.esop, targetSpendReal * shareEsop);
+    const totalSpendNeed = targetSpendReal + healthcareShortfall;
+    const desired = splitWithdrawal(bal, totalSpendNeed, strategy);
+    const { desiredTrad, desiredRoth, desiredTax, desiredEsop } = desired;
 
     let rmdTrad = 0, rmdEsop = 0;
     if (age >= rmdAge) {
@@ -323,30 +422,44 @@ function simulateRetirement(inputs, ssClaimAge, proj, ssBase) {
     const ordinaryTaxableIncome = Math.max(0, ordinaryWithdrawal + taxableSSAmt - tt.stdDeduction);
     const ordinaryTax = progressiveTax(ordinaryTaxableIncome, tt.brackets);
     const capGainsTax = ltcgTax(ordinaryTaxableIncome, taxableGain, tt.ltcg);
-    const totalTax = ordinaryTax + capGainsTax;
+    // State tax: Utah (this tool's default) has no preferential capital-gains rate,
+    // so both the ordinary base and the taxable gain are taxed at the same flat rate.
+    // Simplification: reuses the federal post-standard-deduction base rather than
+    // modeling a separate state deduction/bracket structure.
+    const stateTax = stateTaxRate * (ordinaryTaxableIncome + taxableGain);
+    const totalTax = ordinaryTax + capGainsTax + stateTax;
 
-    const grossIncome = actualTrad + desiredRoth + desiredTax + actualEsop + ssIncome;
+    // Rental cash flow and the HSA-covered portion of healthcare are not run through
+    // this tax engine: rental profit is often substantially sheltered by depreciation
+    // in practice (not modeled here), and qualified HSA withdrawals are tax-free by
+    // law -- see methodology.
+    const grossIncome = actualTrad + desiredRoth + desiredTax + actualEsop + ssIncome + rentalIncomeReal;
     const afterTaxTotal = grossIncome - totalTax;
     const ordinaryEffRate = ordinaryTaxableIncome > 0 ? ordinaryTax / ordinaryTaxableIncome : 0;
     const extraAfterTax = extraFromRMD * (1 - ordinaryEffRate);
-    const spendableAfterTax = afterTaxTotal - extraAfterTax;
+    // The portion of this year's withdrawal that went to cover the HSA-uncovered
+    // healthcare gap was never available to spend on anything else, so -- like the
+    // reinvested extra-from-RMD amount -- it's netted back out of spendable income.
+    const spendableAfterTax = afterTaxTotal - extraAfterTax - healthcareShortfall;
 
     bal.traditional = Math.max(0, bal.traditional - actualTrad) * (1 + realReturn);
     bal.roth = Math.max(0, bal.roth - desiredRoth) * (1 + realReturn);
     bal.taxable = Math.max(0, bal.taxable - desiredTax + extraAfterTax) * (1 + realReturn);
     bal.esop = Math.max(0, bal.esop - actualEsop) * (1 + realEsopReturn);
+    bal.hsa = Math.max(0, bal.hsa - hsaWithdrawal) * (1 + realReturn);
 
     rows.push({
       age, year: CONFIG.CURRENT_YEAR + (age - inputs.currentAge),
-      ssIncome, rmdTrad, rmdEsop, extraFromRMD,
+      ssIncome, rentalIncome: rentalIncomeReal, rmdTrad, rmdEsop, extraFromRMD,
       withdrawalTrad: actualTrad, withdrawalRoth: desiredRoth, withdrawalTaxable: desiredTax, withdrawalEsop: actualEsop,
-      grossIncome, totalTax, afterTaxTotal, spendableAfterTax,
-      balTraditional: bal.traditional, balRoth: bal.roth, balTaxable: bal.taxable, balEsop: bal.esop,
-      balTotal: bal.traditional + bal.roth + bal.taxable + bal.esop,
+      healthcareCost: healthcareCostReal, hsaWithdrawal, healthcareShortfall,
+      grossIncome, totalTax, stateTax, afterTaxTotal, spendableAfterTax,
+      balTraditional: bal.traditional, balRoth: bal.roth, balTaxable: bal.taxable, balEsop: bal.esop, balHsa: bal.hsa,
+      balTotal: bal.traditional + bal.roth + bal.taxable + bal.esop + bal.hsa,
     });
   }
 
-  return { rows, ssAnnualReal, targetSpendReal, swr, totalAtRetirementReal, rmdAge };
+  return { rows, ssAnnualReal, targetSpendReal, swr, totalAtRetirementReal, rmdAge, rentalIncomeReal };
 }
 
 // Objective: total lifetime after-tax resources = money actually spent across
@@ -402,7 +515,7 @@ function computeResults(inputs) {
   const proj = projectBalances(inputs);
   const yearsToRetirement = inputs.retirementAge - inputs.currentAge;
   const inflFactor = Math.pow(1 + inputs.inflationRate / 100, yearsToRetirement);
-  const finalTotal = proj.finalBalances.traditional + proj.finalBalances.roth + proj.finalBalances.taxable + proj.finalBalances.esop;
+  const finalTotal = proj.finalBalances.traditional + proj.finalBalances.roth + proj.finalBalances.taxable + proj.finalBalances.esop + (proj.finalBalances.hsa || 0);
 
   const nominalBalance = finalTotal;
   const realBalance = finalTotal / inflFactor;
@@ -436,6 +549,7 @@ module.exports = {
   taxTables, progressiveTax, ltcgTax, taxableSocialSecurity,
   electiveCapForAge, swrForAge, pIAFromAIME, adjustPIAForClaimAge,
   projectBalances, proxyEarningsHistory, computeSocialSecurityBase, ssAnnualForClaimAge,
+  realEstateAnnualCashFlow, splitWithdrawal,
   simulateRetirement, lifetimeResourceObjective, nominalLifetimeResourceObjective, recommendSSClaimAge, simulateTrust,
   computeResults,
 };
