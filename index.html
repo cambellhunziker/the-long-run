@@ -457,9 +457,14 @@
             </div>
           </div>
           <div class="field">
+            <label for="stateOfResidence">State of residence</label>
+            <select id="stateOfResidence"></select>
+            <div class="unit" id="stateTaxNote">sets the rate below automatically</div>
+          </div>
+          <div class="field">
             <label for="stateTaxRate">State income tax rate</label>
             <input type="number" id="stateTaxRate" min="0" max="15" step="0.05" value="4.45">
-            <div class="unit">% flat rate &mdash; prefilled at Utah's rate; enter 0 or your own if that doesn't apply to you</div>
+            <div class="unit">% flat rate &mdash; auto-filled from your state above (edit directly for a custom or blended estimate, e.g. if you split time between states)</div>
           </div>
         </fieldset>
 
@@ -476,12 +481,12 @@
 
         <fieldset>
           <legend>Withdrawal strategy</legend>
-          <p class="grp-note">How retirement withdrawals are split across your Traditional, Roth, Taxable, and ESOP accounts each year, once Social Security and any rental income are factored in.</p>
+          <p class="grp-note">How retirement withdrawals are split across your Traditional (which includes your rolled-over ESOP &mdash; see the ESOP section below), Roth, and Taxable accounts each year, once Social Security and any rental income are factored in.</p>
           <div class="field">
             <label for="withdrawalStrategy">Withdrawal order</label>
             <select id="withdrawalStrategy">
               <option value="proportional" selected>Proportional (pulls from every account at once, by its share of your balance)</option>
-              <option value="tax-optimized">Tax-optimized (taxable first, then Traditional + ESOP, Roth last)</option>
+              <option value="tax-optimized">Tax-optimized (taxable first, then Traditional, Roth last)</option>
             </select>
           </div>
         </fieldset>
@@ -766,7 +771,7 @@
         <div class="table-scroll">
           <table>
             <thead>
-              <tr><th>Age</th><th>Year</th><th>Social Security</th><th>Rental income</th><th>Traditional</th><th>Roth</th><th>Taxable</th><th>ESOP</th><th>RMD (forced)</th><th>Healthcare (HSA)</th><th>Healthcare (shortfall)</th><th>Gross income</th><th>Federal tax</th><th>State tax</th><th>After-tax income</th><th>Spendable income</th><th>Ending balance</th></tr>
+              <tr><th>Age</th><th>Year</th><th>Social Security</th><th>Rental income</th><th>Traditional (+ ESOP)</th><th>Roth</th><th>Taxable</th><th>RMD (forced)</th><th>Healthcare (HSA)</th><th>Healthcare (shortfall)</th><th>Gross income</th><th>Federal tax</th><th>State tax</th><th>After-tax income</th><th>Spendable income</th><th>Ending balance</th></tr>
             </thead>
             <tbody id="retirementIncomeBody"></tbody>
           </table>
@@ -811,16 +816,16 @@
         <details>
           <summary>How taxes are estimated</summary>
           <div class="details-body">
-            <p>The income figures use 2026 federal tax law and are computed in today's dollars using today's brackets and standard deduction &mdash; a reasonable simplification since both are adjusted for inflation annually and roughly move together over time. Traditional-account and ESOP withdrawals are taxed as ordinary income; Roth withdrawals are entirely tax-free; taxable-brokerage withdrawals are taxed only on their embedded gain (tracked from your contributions vs. growth), at long-term capital-gains rates, stacked on top of your ordinary income. The taxable share of your Social Security benefit is estimated using the IRS's combined-income test (50%/85% thresholds).</p>
-            <p>State tax is added on top of federal as a single flat rate (the &ldquo;State income tax rate&rdquo; field, prefilled at Utah's current 4.45% flat rate &mdash; Tax Foundation, effective 1/1/2026) applied to both your ordinary taxable income and your taxable capital gain, since Utah has no preferential capital-gains rate. If you live somewhere else, set your own flat-rate approximation or 0; this tool doesn't model progressive state brackets or state-specific deductions and credits (Utah's own Taxpayer Tax Credit, for instance, isn't modeled), so treat the state figure as directional rather than exact. Rental income (see below) is not run through this tax engine at all, and HSA withdrawals for healthcare are tax-free by law and also don't touch it.</p>
+            <p>The income figures use 2026 federal tax law and are computed in today's dollars using today's brackets and standard deduction &mdash; a reasonable simplification since both are adjusted for inflation annually and roughly move together over time. Traditional-account withdrawals (which include your rolled-over ESOP &mdash; see the ESOP section below) are taxed as ordinary income; Roth withdrawals are entirely tax-free; taxable-brokerage withdrawals are taxed only on their embedded gain (tracked from your contributions vs. growth), at long-term capital-gains rates, stacked on top of your ordinary income. The taxable share of your Social Security benefit is estimated using the IRS's combined-income test (50%/85% thresholds).</p>
+            <p>State tax is added on top of federal as a single flat rate, applied to both your ordinary taxable income and your taxable capital gain. Pick your state from the &ldquo;State of residence&rdquo; dropdown and the &ldquo;State income tax rate&rdquo; field below it fills in automatically (Utah, this tool's default, is exact at its current 4.45% flat rate). For the 9 states with no general wage income tax &mdash; including Washington, whose tax applies only to capital gains above a high annual threshold &mdash; the field fills with 0. For the roughly 15 other flat-tax states the figure is exact. For the states with graduated brackets (the majority, plus DC), there's no single correct flat rate, so the dropdown fills in that state's <em>top marginal rate</em> as a representative figure &mdash; this overstates tax for income below the top bracket, so it's meant as a starting point to edit down, not a final answer. You can always type your own rate directly (it decouples from the dropdown, which switches to &ldquo;Custom&rdquo;), which is the right move if you know your actual blended rate, split time between states, or your state has its own deductions and credits this tool doesn't model (Utah's Taxpayer Tax Credit, for instance, isn't captured). Figures are sourced from the Tax Foundation's 2026 state income tax data; state tax law changes most years (Utah cut its own rate mid-2026), so treat this as a snapshot to verify, not a guarantee. Rental income (see below) is not run through this tax engine at all, and HSA withdrawals for healthcare are tax-free by law and also don't touch it.</p>
             <p>In retirement, this tool draws down your accounts according to the &ldquo;Withdrawal strategy&rdquo; you choose (see below) &mdash; the default is proportional, matching earlier versions of this tool, but a tax-optimized order is also available. Once you reach the age Required Minimum Distributions kick in, if the RMD on your Traditional or ESOP balance exceeds what your chosen strategy would have taken, the tool forces the larger RMD amount out (as the IRS requires) and reinvests anything beyond your target spending, after tax, into your taxable account.</p>
           </div>
         </details>
         <details>
           <summary>How the withdrawal strategy toggle works</summary>
           <div class="details-body">
-            <p><strong>Proportional</strong> pulls from your Traditional, Roth, Taxable, and ESOP accounts all at once, each in proportion to its share of your total balance that year. It's simple, but not tax-efficient: it triggers ordinary income tax and burns through tax-free Roth growth every single year, whether or not that's actually the cheapest way to fund your spending.</p>
-            <p><strong>Tax-optimized</strong> instead fills your spending need in a conventional order: your Taxable brokerage first (only the embedded gain is taxed, and it preserves your tax-deferred and tax-free accounts' growth longest), then Traditional and ESOP together (both ordinary income, split pro-rata between the two since taxes treat them identically), and Roth only last, once everything else is exhausted &mdash; because Roth has no RMDs and grows tax-free indefinitely, it's generally the best bucket to leave alone as long as possible. Required Minimum Distributions are still forced on top of either strategy once you reach RMD age, since the IRS doesn't care which strategy you picked.</p>
+            <p><strong>Proportional</strong> pulls from your Traditional (which by retirement includes your rolled-over ESOP &mdash; see below), Roth, and Taxable accounts all at once, each in proportion to its share of your total balance that year. It's simple, but not tax-efficient: it triggers ordinary income tax and burns through tax-free Roth growth every single year, whether or not that's actually the cheapest way to fund your spending.</p>
+            <p><strong>Tax-optimized</strong> instead fills your spending need in a conventional order: your Taxable brokerage first (only the embedded gain is taxed, and it preserves your tax-deferred and tax-free accounts' growth longest), then Traditional, and Roth only last, once everything else is exhausted &mdash; because Roth has no RMDs and grows tax-free indefinitely, it's generally the best bucket to leave alone as long as possible. Required Minimum Distributions are still forced on top of either strategy once you reach RMD age, since the IRS doesn't care which strategy you picked.</p>
             <p>This is a simplification of real tax-bracket management (which often fills ordinary income up to the top of a target bracket every year, blending in some Roth or Traditional withdrawals earlier than strict bucket order would, to smooth your marginal rate over your whole retirement rather than deferring everything). Bucket-order sequencing is still a legitimate, commonly recommended approach and a reasonable default; a fee-only financial advisor or tax professional can help fine-tune the actual sequence for your situation, especially around IRMAA thresholds and Roth conversion opportunities this tool doesn't model.</p>
           </div>
         </details>
@@ -847,14 +852,16 @@
         <details>
           <summary>How Required Minimum Distributions (RMDs) are modeled</summary>
           <div class="details-body">
-            <p>Under SECURE 2.0, RMDs on Traditional and ESOP balances begin at age 75 if you were born in 1960 or later, or age 73 if born earlier &mdash; this tool derives your birth year from your current age and applies the correct start age automatically. Each year at or past that age, the required withdrawal is your prior-year-end balance in that bucket divided by the IRS Uniform Lifetime Table divisor for your age (e.g. 26.5 at 73, falling toward 6.4 by age 100). If your target spending already calls for more than the RMD, nothing changes; if the RMD is larger, the extra is withdrawn, taxed, and the after-tax remainder is added to your taxable account rather than spent &mdash; a simplification, since real RMD-driven reinvestment decisions depend on your broader financial picture. Roth accounts have no RMDs under current law, which this tool reflects.</p>
+            <p>Under SECURE 2.0, RMDs on your Traditional balance (which by retirement includes your rolled-over ESOP &mdash; see below) begin at age 75 if you were born in 1960 or later, or age 73 if born earlier &mdash; this tool derives your birth year from your current age and applies the correct start age automatically. Each year at or past that age, the required withdrawal is your prior-year-end Traditional balance divided by the IRS Uniform Lifetime Table divisor for your age (e.g. 26.5 at 73, falling toward 6.4 by age 100). If your target spending already calls for more than the RMD, nothing changes; if the RMD is larger, the extra is withdrawn, taxed, and the after-tax remainder is added to your taxable account rather than spent &mdash; a simplification, since real RMD-driven reinvestment decisions depend on your broader financial picture. Roth accounts have no RMDs under current law, which this tool reflects.</p>
           </div>
         </details>
         <details>
           <summary>How the ESOP is modeled</summary>
           <div class="details-body">
-            <p>An Employee Stock Ownership Plan is an employer-funded retirement plan, not a payroll deferral &mdash; the company contributes shares or cash to buy shares on your behalf, typically allocated across participants roughly in proportion to compensation, and taxed as ordinary income when distributed (like a 401(k)), which is why this tool treats ESOP withdrawals the same way it treats Traditional withdrawals. It grows at your own assumed rate for your company's stock, not the broad-market return you set elsewhere (company-specific results can run well above or below the S&amp;P 500).</p>
-            <p>Many ESOPs, including leveraged ones, work differently from a simple annual grant: the trust borrows money to buy a large block of shares up front from selling owners, and those shares sit in a suspense account until the loan is paid off &mdash; each loan payment releases a proportional slice to allocate to participants. That makes the contribution rate you're actually experiencing roughly steady while the loan is being serviced, then it drops (often to just a smaller non-leveraged contribution, or to zero) once the loan retires &mdash; not a smooth decay to nothing. If that describes your plan, set &ldquo;Loan payoff year&rdquo; to when the loan retires and &ldquo;Contribution after payoff&rdquo; to whatever smaller rate (if any) continues afterward; leave the payoff year blank to model the contribution rate as continuing indefinitely (the simpler assumption, appropriate if your company keeps re-leveraging to buy out retiring owners on an ongoing basis, or if your ESOP isn't leveraged at all). Whichever rate applies still decays by the &ldquo;allocation decay&rdquo; percentage you set, since headcount growth dilutes both the leveraged and non-leveraged pools alike &mdash; as companies mature, employee headcount tends to grow faster than the share pool, so each individual's allocation as a share of pay tends to shrink over the years even as the plan overall keeps growing. There's no single public formula for that decay rate, so the default (3%/year) is a reasonable illustrative starting point, not a sourced constant &mdash; adjust it if you know your company's actual allocation trend. This tool does not model vesting schedules or cliffs (grants are treated as immediately vested), single-company concentration risk (an ESOP is far less diversified than a broad index, and a real plan should treat that risk separately from this tool's constant-return assumption), the specific rules around ESOP distributions at separation vs. retirement, or the mechanics of multiple overlapping loan tranches with different payoff dates (if your plan has several, use the payoff year of the last one to retire, since that's when your contribution rate actually steps down).</p>
+            <p>An Employee Stock Ownership Plan is an employer-funded retirement plan, not a payroll deferral &mdash; the company contributes shares or cash to buy shares on your behalf, typically allocated across participants roughly in proportion to compensation, and taxed as ordinary income when distributed (like a 401(k)). While you're working, it grows at your own assumed rate for your company's stock, not the broad-market return you set elsewhere (company-specific results can run well above or below the S&amp;P 500), and it's tracked as its own account, separate from Traditional &mdash; see below for what happens to it at retirement.</p>
+            <p>Many ESOPs, including leveraged ones, work differently from a simple annual grant: the trust borrows money to buy a large block of shares up front from selling owners, and those shares sit in a suspense account until the loan is paid off &mdash; each loan payment releases a proportional slice to allocate to participants. That makes the contribution rate you're actually experiencing roughly steady while the loan is being serviced, then it drops (often to just a smaller non-leveraged contribution, or to zero) once the loan retires &mdash; not a smooth decay to nothing. If that describes your plan, set &ldquo;Loan payoff year&rdquo; to when the loan retires and &ldquo;Contribution after payoff&rdquo; to whatever smaller rate (if any) continues afterward; leave the payoff year blank to model the contribution rate as continuing indefinitely (the simpler assumption, appropriate if your company keeps re-leveraging to buy out retiring owners on an ongoing basis, or if your ESOP isn't leveraged at all). Whichever rate applies still decays by the &ldquo;allocation decay&rdquo; percentage you set, since headcount growth dilutes both the leveraged and non-leveraged pools alike &mdash; as companies mature, employee headcount tends to grow faster than the share pool, so each individual's allocation as a share of pay tends to shrink over the years even as the plan overall keeps growing. There's no single public formula for that decay rate, so the default (3%/year) is a reasonable illustrative starting point, not a sourced constant &mdash; adjust it if you know your company's actual allocation trend.</p>
+            <p><strong>At retirement, this tool assumes your ESOP balance is rolled over into your Traditional account</strong> rather than taken as a taxable lump-sum distribution &mdash; the tax-smart move, since a rollover defers ordinary income tax exactly the way rolling a 401(k) into an IRA does (cashing out instead means owing ordinary income tax, all at once, on the entire balance the year you receive it). In the model, your ESOP and Traditional balances at retirement are simply added together into one Traditional balance, which is what the &ldquo;Withdrawal strategy&rdquo; and Required Minimum Distribution rules above then apply to; from that point on, the whole balance grows at your general portfolio return rather than the ESOP-specific company-stock rate, consistent with rolling out of concentrated employer stock into a normal, diversified IRA (a good idea on its own, independent of the tax treatment, given single-company concentration risk). That's why the year-by-year retirement income table shows a combined &ldquo;Traditional (+ ESOP)&rdquo; column rather than a separate ESOP line once you've retired.</p>
+            <p>This tool does not model an alternative strategy called Net Unrealized Appreciation (NUA): taking your ESOP distribution as company stock in kind, rather than rolling it over, lets you pay ordinary income tax only on the stock's original cost basis, with the appreciation taxed later at capital-gains rates when you sell &mdash; potentially a meaningfully better outcome if most of your ESOP's value is company growth rather than your own basis, but it forgoes tax deferral up front and keeps you concentrated in employer stock longer, so whether it beats a rollover depends on your specific numbers and is worth running past a tax professional. This tool also does not model vesting schedules or cliffs (grants are treated as immediately vested), the specific distribution-timing rules around separation from service (including the exempt-loan exception, which can let the leveraged portion of your account be held back until the loan is repaid), or the mechanics of multiple overlapping loan tranches with different payoff dates (if your plan has several, use the payoff year of the last one to retire, since that's when your contribution rate actually steps down).</p>
           </div>
         </details>
         <details>
@@ -922,12 +929,43 @@
     LE_AGES: [18,20,22,25,30,35,40,45,50,55,60,65,70,75,80,85,90],
     LE_MALE:   [58.56,56.69,54.83,52.06,47.50,43.02,38.59,34.21,29.90,25.73,21.79,18.12,14.66,11.42,8.50,6.04,4.11],
     LE_FEMALE: [63.69,61.74,59.80,56.90,52.08,47.34,42.64,38.01,33.45,29.01,24.73,20.66,16.76,13.10,9.82,7.02,4.80],
-    // State income tax: a flat rate applied on top of federal, matching Utah (this
-    // tool's default) -- flat on both ordinary income and capital gains (Utah has no
-    // preferential capital-gains rate). Sourced from the Tax Foundation, effective
-    // 1/1/2026. Editable in the UI for other states; no progressive state brackets
-    // or state-specific credits/deductions are modeled.
+    // State income tax: a single flat rate applied on top of federal, on both ordinary
+    // income and capital gains (a simplification -- most states tax capital gains the
+    // same as ordinary income, but a few don't). The "State of residence" dropdown
+    // below looks up a rate per state from STATE_TAX_TABLE and fills the editable
+    // "State income tax rate" field; picking a state is a convenience, not a separate
+    // input the calculation reads. Sourced from the Tax Foundation's 2026 state
+    // income tax data (taxfoundation.org/data/all/state/state-income-tax-rates-2026),
+    // cross-checked against Utah's own legislature for this tool's default state,
+    // where Tax Foundation's aggregation lagged a mid-2026 rate cut (S.B. 60, 4.50%
+    // to 4.45%). For the 9 states with no general wage income tax (including
+    // Washington, whose income tax applies only to capital gains above a high
+    // threshold), the rate is 0. For the ~15 flat-tax states, the rate is exact. For
+    // the ~26 states plus DC with graduated brackets, the TOP marginal rate is used
+    // as a representative figure -- this will overstate tax for income below the top
+    // bracket, so it's flagged in the UI as an approximation to edit if a more
+    // accurate blended rate is known. State tax law changes most years (as Utah's own
+    // mid-2026 cut shows), so treat this table as a snapshot, not a guarantee.
     UTAH_FLAT_TAX_RATE: 4.45,
+    STATE_TAX_TABLE: {
+      AL:['Alabama',5.00,'graduated'], AK:['Alaska',0,'none'], AZ:['Arizona',2.50,'flat'],
+      AR:['Arkansas',3.90,'graduated'], CA:['California',13.30,'graduated'], CO:['Colorado',4.40,'flat'],
+      CT:['Connecticut',6.99,'graduated'], DE:['Delaware',6.60,'graduated'], DC:['District of Columbia',10.75,'graduated'],
+      FL:['Florida',0,'none'], GA:['Georgia',5.19,'flat'], HI:['Hawaii',11.00,'graduated'],
+      ID:['Idaho',5.30,'flat'], IL:['Illinois',4.95,'flat'], IN:['Indiana',2.95,'flat'],
+      IA:['Iowa',3.80,'flat'], KS:['Kansas',5.58,'graduated'], KY:['Kentucky',3.50,'flat'],
+      LA:['Louisiana',3.00,'flat'], ME:['Maine',7.15,'graduated'], MD:['Maryland',6.50,'graduated'],
+      MA:['Massachusetts',9.00,'graduated'], MI:['Michigan',4.25,'flat'], MN:['Minnesota',9.85,'graduated'],
+      MS:['Mississippi',4.00,'flat'], MO:['Missouri',4.70,'graduated'], MT:['Montana',5.65,'graduated'],
+      NE:['Nebraska',4.55,'graduated'], NV:['Nevada',0,'none'], NH:['New Hampshire',0,'none'],
+      NJ:['New Jersey',10.75,'graduated'], NM:['New Mexico',5.90,'graduated'], NY:['New York',10.90,'graduated'],
+      NC:['North Carolina',3.99,'flat'], ND:['North Dakota',2.50,'graduated'], OH:['Ohio',2.75,'flat'],
+      OK:['Oklahoma',4.50,'graduated'], OR:['Oregon',9.90,'graduated'], PA:['Pennsylvania',3.07,'flat'],
+      RI:['Rhode Island',5.99,'graduated'], SC:['South Carolina',6.00,'graduated'], SD:['South Dakota',0,'none'],
+      TN:['Tennessee',0,'none'], TX:['Texas',0,'none'], UT:['Utah',4.45,'flat'],
+      VT:['Vermont',8.75,'graduated'], VA:['Virginia',5.75,'graduated'], WA:['Washington',0,'none-capgains-only'],
+      WV:['West Virginia',4.82,'graduated'], WI:['Wisconsin',7.65,'graduated'], WY:['Wyoming',0,'none']
+    },
     // 2026 IRS HSA contribution limits (self-only / family) and the 55+ catch-up,
     // grown with inflation year over year to mirror how the IRS actually indexes them.
     HSA_LIMIT_SELF: 4400,
@@ -947,6 +985,57 @@
   };
 
   document.getElementById('curYearLabel').textContent = CONFIG.CURRENT_YEAR;
+
+  // ================= State of residence -> state tax rate =================
+  // Populates the state dropdown, keeps the editable rate field in sync with it, and
+  // flips the dropdown to "Custom" if the rate is hand-edited away from the looked-up
+  // value -- so the two controls never silently disagree.
+  (function initStateDropdown(){
+    var sel = document.getElementById('stateOfResidence');
+    var rateEl = document.getElementById('stateTaxRate');
+    var noteEl = document.getElementById('stateTaxNote');
+    var codes = Object.keys(CONFIG.STATE_TAX_TABLE).sort(function(a,b){
+      return CONFIG.STATE_TAX_TABLE[a][0].localeCompare(CONFIG.STATE_TAX_TABLE[b][0]);
+    });
+    codes.forEach(function(code){
+      var opt = document.createElement('option');
+      opt.value = code;
+      opt.textContent = CONFIG.STATE_TAX_TABLE[code][0];
+      sel.appendChild(opt);
+    });
+    var customOpt = document.createElement('option');
+    customOpt.value = 'custom';
+    customOpt.textContent = 'Custom / other (edit rate directly)';
+    sel.appendChild(customOpt);
+    sel.value = 'UT';
+
+    function noteFor(code){
+      if (code === 'custom') return 'Custom rate -- not tied to a specific state.';
+      var row = CONFIG.STATE_TAX_TABLE[code];
+      if (row[2] === 'none') return 'No general state income tax.';
+      if (row[2] === 'none-capgains-only') return 'No general income tax -- a separate tax applies only to capital gains above a high annual threshold, not modeled here.';
+      if (row[2] === 'flat') return 'Flat rate, applied exactly.';
+      return 'Top marginal rate shown -- a graduated-bracket state, so this overstates tax on income below the top bracket. Edit for a more accurate blended estimate.';
+    }
+
+    sel.addEventListener('change', function(){
+      if (sel.value !== 'custom'){
+        var rate = CONFIG.STATE_TAX_TABLE[sel.value][1];
+        rateEl.value = (Math.round(rate*100)/100).toString();
+      }
+      noteEl.textContent = noteFor(sel.value);
+      // change on the select bubbles to the form's own change listener, which re-renders.
+    });
+    rateEl.addEventListener('input', function(){
+      var row = CONFIG.STATE_TAX_TABLE[sel.value];
+      if (sel.value === 'custom') return;
+      if (!row || parseFloat(rateEl.value) !== row[1]){
+        sel.value = 'custom';
+        noteEl.textContent = noteFor('custom');
+      }
+    });
+    noteEl.textContent = noteFor(sel.value);
+  })();
 
   // ================= Core formulas (mirrors tested calc-engine) =================
   function fraMonths(birthYear){
@@ -1246,11 +1335,16 @@
     var realMedicalTrend = (1+CONFIG.HEALTHCARE_MEDICAL_TREND/100)/(1+inputs.inflationRate/100) - 1;
     var rentalIncomeReal = realEstateAnnualCashFlow(inputs);
 
+    // At retirement, the ESOP balance is assumed rolled over into a Traditional IRA
+    // rather than taken as a taxable lump-sum distribution (see methodology): it moves
+    // into "traditional" in one step here, and grows at the general portfolio return
+    // from here on rather than the ESOP-specific rate, consistent with rolling into a
+    // normal, diversified IRA.
     var bal = {
-      traditional: proj.finalBalances.traditional/inflFactor,
+      traditional: (proj.finalBalances.traditional+proj.finalBalances.esop)/inflFactor,
       roth: proj.finalBalances.roth/inflFactor,
       taxable: proj.finalBalances.taxable/inflFactor,
-      esop: proj.finalBalances.esop/inflFactor,
+      esop: 0,
       hsa: (proj.finalBalances.hsa||0)/inflFactor
     };
     var totalAtRetirementReal = bal.traditional+bal.roth+bal.taxable+bal.esop;
@@ -1657,7 +1751,7 @@
       tr.innerHTML = '<td>'+r.age+'</td><td>'+r.year+'</td><td class="num">'+fmtCompact(conv(r.ssIncome,r.age))+
         '</td><td class="num">'+(r.rentalIncome>0 ? fmtCompact(conv(r.rentalIncome,r.age)) : '—')+
         '</td><td class="num">'+fmtCompact(conv(r.withdrawalTrad,r.age))+'</td><td class="num">'+fmtCompact(conv(r.withdrawalRoth,r.age))+
-        '</td><td class="num">'+fmtCompact(conv(r.withdrawalTaxable,r.age))+'</td><td class="num">'+fmtCompact(conv(r.withdrawalEsop,r.age))+
+        '</td><td class="num">'+fmtCompact(conv(r.withdrawalTaxable,r.age))+
         '</td><td class="num">'+(r.extraFromRMD>1 ? fmtCompact(conv(r.extraFromRMD,r.age)) : '—')+
         '</td><td class="num">'+(r.hsaWithdrawal>0 ? '−'+fmtCompact(conv(r.hsaWithdrawal,r.age)) : '—')+
         '</td><td class="num">'+(r.healthcareShortfall>0 ? '−'+fmtCompact(conv(r.healthcareShortfall,r.age)) : '—')+
@@ -1845,7 +1939,9 @@
     }
     kv('HSA: value / contribution / coverage', fmtUSD(inputs.hsaBalance)+' / '+inputs.hsaContribPct+'%/yr / '+(inputs.hsaCoverage==='family'?'Family':'Self-only'));
     kv('Healthcare cost (at 65, today\'s $)', fmtUSD(inputs.healthcareAnnualCost)+'/yr per person');
-    kv('State income tax rate', inputs.stateTaxRate+'% flat');
+    var stateSelVal = document.getElementById('stateOfResidence').value;
+    var stateLabel = (stateSelVal !== 'custom' && CONFIG.STATE_TAX_TABLE[stateSelVal]) ? CONFIG.STATE_TAX_TABLE[stateSelVal][0]+', ' : '';
+    kv('State income tax rate', stateLabel+inputs.stateTaxRate+'% flat');
     kv('Withdrawal strategy', inputs.withdrawalStrategy==='tax-optimized' ? 'Tax-optimized (taxable, then trad.+ESOP, then Roth)' : 'Proportional (by balance share)');
     var rentalCashFlowPdf = realEstateAnnualCashFlow(inputs);
     if (rentalCashFlowPdf !== 0){
@@ -2000,7 +2096,7 @@
     p('Dollar comparisons: "Nominal" = actual future dollars with no inflation adjustment. "Today\'s purchasing power" deflates using your assumed inflation rate. "1996 purchasing power" additionally applies actual historical U.S. CPI-U inflation from 1996 to 2026 (a cumulative factor of about 2.13x), referencing the year The Millionaire Next Door was published and popularized "millionaire" as a benchmark.');
     p('Nominal vs. today\'s-dollars toggle: aside from the three balance-at-retirement figures (which always show all three bases), every dollar figure in this report uses the basis selected on screen at the time it was generated. In nominal mode, retirement-year figures (which are computed natively in real terms) are inflated back up to the actual dollar amount that would appear in that future calendar year; in today\'s-dollars mode, accumulation-phase figures (computed natively in nominal terms) are deflated to current purchasing power. The lifetime Social Security comparison total, in nominal mode, is the sum of each year\'s actual future dollars received -- a legitimate but unusual figure, since it adds together dollars from many different future years.');
     p('Legacy & trust: whatever remains at your planning age seeds a trust that distributes a fixed percentage of its balance annually and grows at your real (inflation-adjusted) market return. It does not model trust/estate taxes, trustee fees, cost-basis step-up, or your ESOP\'s company-specific return. A 100-year projection at constant rates is illustrative of compounding vs. spending, not a forecast to rely on.');
-    p('Not included: long-term-care costs specifically, pensions, home equity or other real estate as a balance-sheet asset, other debts or assets, market volatility (a constant annual return is assumed rather than real year-to-year sequence risk), progressive state tax brackets or credits (a flat rate is used), the pre-65/pre-Medicare healthcare cost gap (the healthcare baseline is anchored to Medicare-era costs and likely understates pre-65 costs), rental property income tax and depreciation, mortgage payoff\'s effect on rental cash flow, HSA tax treatment for a non-spouse heir, ESOP diversification elections, and a second earner\'s own income or Social Security benefit under married filing jointly.');
+    p('Not included: long-term-care costs specifically, pensions, home equity or other real estate as a balance-sheet asset, other debts or assets, market volatility (a constant annual return is assumed rather than real year-to-year sequence risk), progressive state tax brackets or credits (a flat rate is used), the pre-65/pre-Medicare healthcare cost gap (the healthcare baseline is anchored to Medicare-era costs and likely understates pre-65 costs), rental property income tax and depreciation, mortgage payoff\'s effect on rental cash flow, HSA tax treatment for a non-spouse heir, in-service ESOP diversification elections, the Net Unrealized Appreciation (NUA) tax strategy as an alternative to rolling an ESOP distribution into an IRA, ESOP distribution-timing rules at separation from service, and a second earner\'s own income or Social Security benefit under married filing jointly.');
     y += 6; rule();
     doc.setFont('helvetica','italic'); doc.setFontSize(9); doc.setTextColor(110,110,110);
     var disc = doc.splitTextToSize('This report is an educational planning illustration, not personalized financial, tax, legal, or Social Security advice. Figures are estimates based on the assumptions you entered and current (2026) public tax and Social Security rules, which are subject to change. Consult a fee-only fiduciary financial advisor and a tax professional before making retirement decisions.', pageW-margin*2);

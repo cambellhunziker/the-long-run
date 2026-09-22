@@ -370,11 +370,23 @@ function simulateRetirement(inputs, ssClaimAge, proj, ssBase) {
   const realMedicalTrend = (1 + CONFIG.HEALTHCARE_MEDICAL_TREND / 100) / (1 + inputs.inflationRate / 100) - 1;
   const rentalIncomeReal = realEstateAnnualCashFlow(inputs);
 
+  // At retirement, this tool assumes the ESOP balance is rolled over into a Traditional
+  // IRA rather than taken as a taxable lump-sum distribution -- the tax-smart move,
+  // since a rollover defers ordinary income tax exactly the way a 401(k) rollover does
+  // (a distribution instead would owe ordinary tax on the whole balance immediately).
+  // Practically, that means: the dollars move from the "esop" bucket into "traditional"
+  // in one step at the retirement boundary, the ESOP bucket is empty for the rest of the
+  // simulation, and from here on that money grows at the general portfolio return
+  // (expectedReturn) rather than the ESOP-specific company-stock rate (esopGrowthRate)
+  // -- consistent with rolling into a normal, diversified IRA rather than staying
+  // concentrated in employer stock. This does not model Net Unrealized Appreciation
+  // (NUA), an alternative strategy where taking an in-kind stock distribution instead of
+  // rolling over can convert some of the gain to capital-gains tax -- see methodology.
   let bal = {
-    traditional: proj.finalBalances.traditional / inflFactor,
+    traditional: (proj.finalBalances.traditional + proj.finalBalances.esop) / inflFactor,
     roth: proj.finalBalances.roth / inflFactor,
     taxable: proj.finalBalances.taxable / inflFactor,
-    esop: proj.finalBalances.esop / inflFactor,
+    esop: 0,
     hsa: (proj.finalBalances.hsa || 0) / inflFactor,
   };
   const totalAtRetirementReal = bal.traditional + bal.roth + bal.taxable + bal.esop;

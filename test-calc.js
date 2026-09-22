@@ -112,6 +112,53 @@ const projAlwaysLeveraged = E.projectBalances(alwaysLeveraged);
 console.log('Backward-compat check (no payoff year vs. payoff year far in future) match:',
   Math.abs(projNoPayoffYear.finalBalances.esop - projAlwaysLeveraged.finalBalances.esop) < 0.01 ? 'OK' : 'MISMATCH');
 
+console.log('\n=== ESOP rolls into Traditional at retirement sanity ===');
+// A retiree with a sizable ESOP and small Traditional balance: at retirement the two
+// should merge into one Traditional bucket, with the ESOP bucket empty from then on.
+const rollBase = Object.assign({}, base, {
+  traditionalBalance: 10000, traditionalContribPct: 0, rothContribPct: 0, taxableContribPct: 0,
+  esopBalance: 50000, esopContribPct: 8, esopDilutionRate: 0, esopGrowthRate: 7,
+  employerMatchRate: 0, retirementAge: 65, deathAge: 90, withdrawalStrategy: 'proportional',
+});
+const rollProj = E.projectBalances(rollBase);
+const rollSsBase = E.computeSocialSecurityBase(rollBase);
+const rollSim = E.simulateRetirement(rollBase, 67, rollProj, rollSsBase);
+console.log('ESOP + Traditional at retirement (should both be > 0 going in):',
+  fmt(rollProj.finalBalances.esop), '/', fmt(rollProj.finalBalances.traditional));
+console.log('First retirement-year ESOP withdrawal (expect 0, ESOP already rolled in):', fmt(rollSim.rows[0].withdrawalEsop));
+const anyEsopWithdrawal = rollSim.rows.some(row => row.withdrawalEsop > 0.01 || row.rmdEsop > 0.01 || row.balEsop > 0.01);
+console.log('No row ever draws from or holds an ESOP balance post-retirement:', anyEsopWithdrawal ? 'MISMATCH' : 'OK');
+console.log('First-year Traditional withdrawal is nonzero (money did move into Traditional):', rollSim.rows[0].withdrawalTrad > 0 ? 'OK' : 'MISMATCH');
+// Total real dollars at the retirement boundary should be conserved by the merge (no
+// money created or destroyed, just relabeled from esop to traditional).
+const totalBeforeMerge = (rollProj.finalBalances.traditional + rollProj.finalBalances.roth + rollProj.finalBalances.taxable + rollProj.finalBalances.esop + (rollProj.finalBalances.hsa||0));
+const yearsToRet = rollBase.retirementAge - rollBase.currentAge;
+const inflFactorRoll = Math.pow(1 + rollBase.inflationRate/100, yearsToRet);
+const totalAfterMergeReal = rollSim.totalAtRetirementReal;
+console.log('Total value conserved across the merge (real $ match):',
+  Math.abs(totalBeforeMerge/inflFactorRoll - totalAfterMergeReal) < 1 ? 'OK' : 'MISMATCH: ' + (totalBeforeMerge/inflFactorRoll) + ' vs ' + totalAfterMergeReal);
+// Post-retirement growth should follow the general portfolio return, not the ESOP rate.
+// Invariance check: two scenarios with the SAME total balance at retirement, split
+// differently between traditional/esop pre-merge but with expectedReturn and
+// esopGrowthRate set far apart, should simulate IDENTICALLY once retired -- if the
+// (now-irrelevant) esop rate were still leaking in post-retirement, they wouldn't match.
+const splitA = Object.assign({}, base, {
+  currentAge: 65, // no accumulation years, so finalBalances == the initial balances exactly --
+                   // isolates the retirement-phase merge from any accumulation-phase growth drift
+  traditionalBalance: 400000, traditionalContribPct: 0, rothContribPct: 0, taxableContribPct: 0,
+  esopBalance: 0, esopContribPct: 0, employerMatchRate: 0,
+  expectedReturn: 4, esopGrowthRate: 20, retirementAge: 65, deathAge: 80, withdrawalStrategy: 'proportional',
+});
+const splitB = Object.assign({}, splitA, { traditionalBalance: 100000, esopBalance: 300000 });
+const projA = E.projectBalances(splitA), projB = E.projectBalances(splitB);
+const ssBaseA = E.computeSocialSecurityBase(splitA), ssBaseB = E.computeSocialSecurityBase(splitB);
+const simA = E.simulateRetirement(splitA, 67, projA, ssBaseA);
+const simB = E.simulateRetirement(splitB, 67, projB, ssBaseB);
+const lastA = simA.rows[simA.rows.length-1], lastB = simB.rows[simB.rows.length-1];
+console.log('Same total at retirement, different traditional/esop split -- ending balance A:', fmt(lastA.balTotal), 'B:', fmt(lastB.balTotal));
+console.log('Retirement simulations match regardless of pre-merge split (esop rate does not leak in):',
+  Math.abs(lastA.balTotal - lastB.balTotal) < 1 ? 'OK' : 'MISMATCH');
+
 console.log('\n=== State tax sanity ===');
 const withState = Object.assign({}, base, {stateTaxRate: 4.45});
 const withoutState = Object.assign({}, base, {stateTaxRate: 0});
