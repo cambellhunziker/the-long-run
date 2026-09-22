@@ -1902,6 +1902,12 @@
       y += lineH;
     }
     function rule(){ doc.setDrawColor(217,219,210); doc.line(margin, y, pageW-margin, y); y += 14; }
+    function hexToRgb(hex){
+      var hx = String(hex).replace('#','');
+      if (hx.length===3) hx = hx.split('').map(function(ch){ return ch+ch; }).join('');
+      var num = parseInt(hx,16);
+      return [(num>>16)&255, (num>>8)&255, num&255];
+    }
     function ensureSpace(needed){
       if (y + needed > doc.internal.pageSize.getHeight()-margin){ doc.addPage(); y = margin; }
     }
@@ -2020,6 +2026,33 @@
       ensureSpace(imgH+10);
       doc.addImage(imgData, 'PNG', margin, y, imgW, imgH);
       y += imgH + 16;
+
+      // The chart's own on-screen legend lives in HTML below the canvas (Chart.js's
+      // built-in legend is turned off), so it isn't part of the captured canvas image
+      // and has to be drawn here separately to match.
+      ensureSpace(30);
+      var legendColors = chartColors();
+      var legendItems = [
+        {label:'Traditional', hex:legendColors.trad},
+        {label:'Roth', hex:legendColors.roth},
+        {label:'Taxable brokerage', hex:legendColors.taxable},
+        {label:'ESOP', hex:legendColors.stock},
+        {label:'HSA', hex:legendColors.forest}
+      ];
+      doc.setFont('helvetica','normal'); doc.setFontSize(9);
+      var swatchSize = 8, swatchGap = 5, itemGap = 16, lx = margin;
+      legendItems.forEach(function(item){
+        var rgb = hexToRgb(item.hex);
+        var textW = doc.getTextWidth(item.label);
+        var itemW = swatchSize + swatchGap + textW + itemGap;
+        if (lx + itemW > pageW - margin){ lx = margin; y += 16; }
+        doc.setFillColor(rgb[0], rgb[1], rgb[2]);
+        doc.rect(lx, y - swatchSize + 1, swatchSize, swatchSize, 'F');
+        doc.setTextColor(60,70,90);
+        doc.text(item.label, lx + swatchSize + swatchGap, y);
+        lx += itemW;
+      });
+      y += 20;
     } catch(e){ p('(Chart image unavailable)', 9); }
 
     // Milestone table
@@ -2088,11 +2121,11 @@
     h('Methodology & assumptions', 14);
     p('4% rule adjustment: this tool uses withdrawal rate = 4.0% + 0.10% for every year of retirement age above 65 (floored at 2.5%, capped at 6.0%) as a transparent heuristic, not an official formula. Actual safe withdrawal rates depend on market conditions at retirement, portfolio mix, and desired legacy.');
     p('Planning age: defaults to your current age plus your remaining life expectancy from the SSA Period Life Table, interpolated for your current age and sex. That\'s a median, so about half of people live longer — raise it to plan more conservatively.');
-    p('Required Minimum Distributions: begin at age 75 (born 1960+) or 73 (born earlier) under SECURE 2.0, applied to Traditional and ESOP balances using the IRS Uniform Lifetime Table. If the RMD exceeds your target spending, the excess is withdrawn, taxed, and the after-tax remainder is reinvested in your taxable account. Roth accounts have no RMDs.');
+    p('Required Minimum Distributions: begin at age 75 (born 1960+) or 73 (born earlier) under SECURE 2.0, applied to your Traditional balance (which by retirement includes your rolled-over ESOP -- see below) using the IRS Uniform Lifetime Table. If the RMD exceeds your target spending, the excess is withdrawn, taxed, and the after-tax remainder is reinvested in your taxable account. Roth accounts have no RMDs.');
     p('Social Security: uses the real 2026 SSA bend-point formula (90%/32%/15% of AIME at $1,226 and $7,391), but a simplified proxy earnings history built from your current salary projected across your career using real (above-inflation) salary growth, capped at the 2026 taxable maximum of $184,500, using your top 35 years. Early/delayed claiming adjustments use the actual SSA percentages. This will differ from your real SSA statement, which uses your actual earnings record.');
     p('Social Security claiming-age recommendation: every age 62-70 is simulated across your full retirement and scored by total lifetime after-tax income plus unspent legacy at death (reinvested RMD dollars are not double-counted). It is a mathematical optimization only, and does not know your health, other income, marital/survivor coordination, or preference for certainty.');
-    p('ESOP: employer-funded (not a payroll deferral), allocated roughly by compensation, and taxed as ordinary income on distribution like a 401(k). It grows at your own assumed company-stock rate, not the S&P 500, and its contribution rate as % of pay decays by your chosen "allocation decay" rate each year, reflecting how ESOP allocations often shrink over time as headcount grows faster than the share pool. That decay rate is a disclosed, unsourced heuristic (default 3%/yr) — adjust it if you know your company\'s actual trend. Vesting and single-company concentration risk are not modeled.');
-    p('Taxes: federal plus a flat state tax rate (editable, defaults to Utah\'s 4.45%). Computed in today\'s dollars using 2026 federal brackets and standard deduction. Traditional and ESOP withdrawals taxed as ordinary income; Roth withdrawals tax-free; taxable-brokerage withdrawals taxed on their embedded gain at long-term capital gains rates; the state rate applies flat to both. Social Security taxability uses the IRS combined-income test. Withdrawal order across account types depends on the withdrawal-strategy toggle (proportional or tax-optimized, subject to RMDs) — see below.');
+    p('ESOP: employer-funded (not a payroll deferral), allocated roughly by compensation. While you\'re working it grows at your own assumed company-stock rate, not the S&P 500, and its contribution rate as % of pay decays by your chosen "allocation decay" rate each year, reflecting how ESOP allocations often shrink over time as headcount grows faster than the share pool. That decay rate is a disclosed, unsourced heuristic (default 3%/yr) — adjust it if you know your company\'s actual trend. At retirement, this tool assumes the balance rolls over into your Traditional account (the tax-smart move vs. a taxable lump-sum distribution) and grows at your general portfolio return from then on; Net Unrealized Appreciation, an alternative to rolling over, is not modeled. Vesting and single-company concentration risk are not modeled.');
+    p('Taxes: federal plus a flat state tax rate (editable, defaults to Utah\'s 4.45%). Computed in today\'s dollars using 2026 federal brackets and standard deduction. Traditional withdrawals (including your rolled-over ESOP) are taxed as ordinary income; Roth withdrawals tax-free; taxable-brokerage withdrawals taxed on their embedded gain at long-term capital gains rates; the state rate applies flat to both. Social Security taxability uses the IRS combined-income test. Withdrawal order across account types depends on the withdrawal-strategy toggle (proportional or tax-optimized, subject to RMDs) — see below.');
     p('Dollar comparisons: "Nominal" = actual future dollars with no inflation adjustment. "Today\'s purchasing power" deflates using your assumed inflation rate. "1996 purchasing power" additionally applies actual historical U.S. CPI-U inflation from 1996 to 2026 (a cumulative factor of about 2.13x), referencing the year The Millionaire Next Door was published and popularized "millionaire" as a benchmark.');
     p('Nominal vs. today\'s-dollars toggle: aside from the three balance-at-retirement figures (which always show all three bases), every dollar figure in this report uses the basis selected on screen at the time it was generated. In nominal mode, retirement-year figures (which are computed natively in real terms) are inflated back up to the actual dollar amount that would appear in that future calendar year; in today\'s-dollars mode, accumulation-phase figures (computed natively in nominal terms) are deflated to current purchasing power. The lifetime Social Security comparison total, in nominal mode, is the sum of each year\'s actual future dollars received -- a legitimate but unusual figure, since it adds together dollars from many different future years.');
     p('Legacy & trust: whatever remains at your planning age seeds a trust that distributes a fixed percentage of its balance annually and grows at your real (inflation-adjusted) market return. It does not model trust/estate taxes, trustee fees, cost-basis step-up, or your ESOP\'s company-specific return. A 100-year projection at constant rates is illustrative of compounding vs. spending, not a forecast to rely on.');
