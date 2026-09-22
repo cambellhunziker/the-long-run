@@ -724,7 +724,7 @@
           <span><span class="swatch" style="background:var(--chart-stock)"></span>ESOP</span>
           <span><span class="swatch" style="background:var(--forest)"></span>HSA</span>
         </div>
-        <p class="grp-note" style="margin-top:10px;">Shown from today through retirement (the accumulation phase), in <span id="chartBasisNote">nominal (future) dollars</span>. See &ldquo;Year-by-year retirement income&rdquo; below for what happens after you stop working.</p>
+        <p class="grp-note" style="margin-top:10px;">Shown from today through retirement (the accumulation phase), in <span id="chartBasisNote">nominal (future) dollars</span>. This is a <strong>stacked</strong> chart: each band's <strong>thickness</strong> (not the height of its top edge) is that account's balance, and the top of the whole stack is your total across all accounts. Hover any point for exact per-account numbers, or see the Milestones table below. See &ldquo;Year-by-year retirement income&rdquo; below for what happens after you stop working.</p>
       </div>
 
       <div class="panel">
@@ -2053,6 +2053,7 @@
         lx += itemW;
       });
       y += 20;
+      p('This is a stacked chart: each band\'s thickness represents that account\'s balance, not the height of its top edge -- the top of the whole stack is your total across all accounts. See the Milestones table on the next page for exact per-account figures.', 8.5);
     } catch(e){ p('(Chart image unavailable)', 9); }
 
     // Milestone table
